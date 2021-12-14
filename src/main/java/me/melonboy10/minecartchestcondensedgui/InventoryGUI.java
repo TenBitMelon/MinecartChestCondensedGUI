@@ -1,14 +1,12 @@
 package me.melonboy10.minecartchestcondensedgui;
 
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription;
-import io.github.cottonmc.cotton.gui.widget.*;
-import net.minecraft.client.MinecraftClient;
+import io.github.cottonmc.cotton.gui.widget.WGridPanel;
+import io.github.cottonmc.cotton.gui.widget.WLabel;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.function.BiConsumer;
 
 public class InventoryGUI extends LightweightGuiDescription {
     public InventoryGUI(HashMap<ItemStack, ChestMinecartEntity> items) {
