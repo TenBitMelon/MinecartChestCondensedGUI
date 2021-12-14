@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "minecartchestcondensedgui",
+  "version": "${version}",
+  "name": "MinecartChestCondensedGUI",
+  "description": "",
+  "authors": [
+    "melonboy10"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/minecartchestcondensedgui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "me.melonboy10.minecartchestcondensedgui.client.MinecartChestCondensedGUIClient"
+    ],
+    "main": [
+      "me.melonboy10.minecartchestcondensedgui.MinecartChestCondensedGUI"
+    ]
+  },
+  "mixins": [
+    "minecartchestcondensedgui.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.12.5",
+    "fabric": "*",
+    "fabric-key-binding-api-v1": "*",
+    "minecraft": "1.18.1"
+  }
+}
