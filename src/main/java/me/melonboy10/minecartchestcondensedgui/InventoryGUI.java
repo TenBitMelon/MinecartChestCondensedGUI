@@ -9,6 +9,8 @@ import net.minecraft.item.ItemStack;
 import java.util.HashMap;
 
 public class InventoryGUI extends LightweightGuiDescription {
+
+    // the gui being rendered with all the stuffs. Need todo this
     public InventoryGUI(HashMap<ItemStack, ChestMinecartEntity> items) {
         WGridPanel root = new WGridPanel();
         setRootPanel(root);
