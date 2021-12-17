@@ -50,6 +50,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
                 }
             }
             SearchTask.tick();
+
         });
     }
 
@@ -113,7 +114,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
 
         public static void start() {
             running = true;
-            System.out.println("start");
+            itemsToMinecart.clear();
         }
 
         public static void end() {
@@ -121,7 +122,10 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
             index = 0;
             waiting = false;
             waitingTicks = 0;
-            MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
+            if (!itemsToMinecart.isEmpty()) {
+                assert client.player != null;
+                MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart, client.player.getInventory())));
+            }
         }
     }
 }
