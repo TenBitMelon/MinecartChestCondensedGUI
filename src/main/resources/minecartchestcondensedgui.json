@@ -6,7 +6,8 @@
   "mixins": [
   ],
   "client": [
-    "ClientSetScreenMixin",
+    "ClientOpenScreenMixin",
+    "ClientCloseScreenMixin",
     "ClientUpdateInventoryMixin"
   ],
   "injectors": {

@@ -12,7 +12,7 @@ import java.util.List;
 
 // SearchTask is responsible for opening and gathering cart contents
 // I is seperate because you need to wait for the gui to open to get the goodies
-public class SearchTask {
+public class MinecartManager {
 
     static MinecraftClient client = MinecraftClient.getInstance();
 
@@ -72,12 +72,12 @@ public class SearchTask {
             System.out.println(minecartEntities);
         }
 
-//        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
+        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
     }
 
     public static void end() {
         running = false;
-        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
+//        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
     }
 }
 /*

@@ -1,12 +1,9 @@
 package me.melonboy10.minecartchestcondensedgui.mixin;
 
-import me.melonboy10.minecartchestcondensedgui.client.MinecartChestCondensedGUIClient;
-import me.melonboy10.minecartchestcondensedgui.client.SearchTask;
+import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
-import net.minecraft.text.LiteralText;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,8 +17,8 @@ public class ClientUpdateInventoryMixin {
 
     @Inject(method = "onInventory()V", at = @At("TAIL"))
     private void interceptPacket(InventoryS2CPacket packet, CallbackInfo ci) {
-        if (SearchTask.currentSyncID == packet.getSyncId()) {
-            SearchTask.indexContents(packet.getContents());
+        if (MinecartManager.currentSyncID == packet.getSyncId()) {
+            MinecartManager.indexContents(packet.getContents());
         }
     }
 }

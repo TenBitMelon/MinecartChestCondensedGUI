@@ -35,15 +35,15 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
             while (keyBinding.wasPressed()) {
                 client.player.sendMessage(new LiteralText("Key Y was pressed!"), false);
 
-                if (!SearchTask.running) {
+                if (!MinecartManager.running) {
                     // If the key was presses search the area for minecarts and add them to the list
 
-                    SearchTask.minecartEntities =
+                    MinecartManager.minecartEntities =
                         (ArrayList<ChestMinecartEntity>) client.player.getWorld().getNonSpectatingEntities(ChestMinecartEntity.class, client.player.getBoundingBox().expand(3))
                             .stream().filter(chestMinecartEntity -> chestMinecartEntity.getDisplayName().getString().equals(displayName)).collect(Collectors.toList());
                     
                     System.out.println("Found carts");
-                    SearchTask.start();
+                    MinecartManager.start();
                 }
             }
         });
