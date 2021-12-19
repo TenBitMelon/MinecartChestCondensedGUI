@@ -12,9 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public class ClientUpdateInventoryMixin {
-    @Shadow
-    private MinecraftClient client;
 
+    @SuppressWarnings("all")
     @Inject(method = "onInventory()V", at = @At("TAIL"))
     private void interceptPacket(InventoryS2CPacket packet, CallbackInfo ci) {
         if (MinecartManager.currentSyncID == packet.getSyncId()) {

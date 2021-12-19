@@ -1,15 +1,6 @@
-package me.melonboy10.minecartchestcondensedgui.client.stacks;
+package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
-import me.melonboy10.minecartchestcondensedgui.client.CondensedItemScreen;
-import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import me.melonboy10.minecartchestcondensedgui.client.CondensedItemScreen;
-
-import java.util.Optional;
-import java.util.UUID;
 
 public class VirtualItemStack {
     

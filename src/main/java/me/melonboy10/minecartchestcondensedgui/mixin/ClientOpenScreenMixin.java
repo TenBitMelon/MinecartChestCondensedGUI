@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPlayNetworkHandler.class)
 public class ClientOpenScreenMixin {
 
+    @SuppressWarnings("all")
     @Inject(method = "onOpenScreen()V", at = @At(value = "INVOKE", ordinal = 1), cancellable = true)
     private void interceptPacket(OpenScreenS2CPacket packet, CallbackInfo ci) {
         if (MinecartManager.running) {
