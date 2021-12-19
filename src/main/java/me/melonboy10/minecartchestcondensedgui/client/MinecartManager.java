@@ -1,9 +1,9 @@
 package me.melonboy10.minecartchestcondensedgui.client;
 
-import io.github.cottonmc.cotton.gui.client.CottonClientScreen;
+import me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemScreen;
+import me.melonboy10.minecartchestcondensedgui.client.inventory.ScreenTest;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Hand;
@@ -75,7 +75,8 @@ public class MinecartManager {
         }
 
 //new CondensedItemScreenHandler(client.player.getInventory(), new SimpleInventory(itemsToMinecart.keySet().toArray(ItemStack[]::new)))
-        MinecraftClient.getInstance().setScreen(new CondensedItemScreen(new LiteralText("Minecarts")));
+//        MinecraftClient.getInstance().setScreen(new CondensedItemScreen(new LiteralText("Minecarts")));
+        MinecraftClient.getInstance().setScreen(new ScreenTest());
     }
 
     public static void end() {
