@@ -74,7 +74,8 @@ public class MinecartManager {
             System.out.println(minecartEntities);
         }
 
-        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
+//new CondensedItemScreenHandler(client.player.getInventory(), new SimpleInventory(itemsToMinecart.keySet().toArray(ItemStack[]::new)))
+        MinecraftClient.getInstance().setScreen(new CondensedItemScreen(new LiteralText("Minecarts")));
     }
 
     public static void end() {
