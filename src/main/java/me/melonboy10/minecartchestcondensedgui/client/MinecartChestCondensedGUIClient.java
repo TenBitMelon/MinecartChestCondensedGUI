@@ -37,7 +37,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
             "key.minecartchestcondensedgui.openmenu",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_Y,
-            "open.menu.key"
+            "minecartcondensedgui"
         ));
 
         // Check for key bind press and tick the minecart searcher
