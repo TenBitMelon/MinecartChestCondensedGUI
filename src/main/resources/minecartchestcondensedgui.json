@@ -6,7 +6,8 @@
   "mixins": [
   ],
   "client": [
-    "ClientSetScreenMixin"
+    "ClientSetScreenMixin",
+    "ClientUpdateInventoryMixin"
   ],
   "injectors": {
     "defaultRequire": 1
