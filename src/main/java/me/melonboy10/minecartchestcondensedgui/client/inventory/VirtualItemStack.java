@@ -1,23 +1,37 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
+import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 
-public class VirtualItemStack {
-    
-    ItemStack visualItemStack;
-    int amount;
+import java.util.ArrayList;
+import java.util.List;
 
-//    public void draw(CondensedItemScreen screen, int x, int y) {
-//        String text = null;
-//        int color = RenderSettings.INSTANCE.getSecondaryColor();
-//
-//        if (zeroed) {
-//            text = "0";
-//            color = 16733525;
-//        } else if (stack.getCount() > 1) {
-//            text = API.instance().getQuantityFormatter().formatWithUnits(getQuantity());
-//        }
-//
-//        screen.dra(poseStack, x, y, stack, true, text, color);
-//    }
+public class VirtualItemStack {
+    public VirtualItemStack(ItemStack visualItemStack, ChestMinecartEntity minecart, int slot, int amount) {
+        this.visualItemStack = visualItemStack;
+        this.amount = amount;
+        containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
+    }
+    public void setItems(ChestMinecartEntity minecart, int slot, int amount) {
+        Boolean newMinecart = true;
+        for (int i = 0; i < containingMinecarts.size(); i++) {
+            ItemMinecart itemMinecart = containingMinecarts.get(i);
+            if (itemMinecart.minecart == minecart) {
+                newMinecart = false;
+                this.amount += amount - itemMinecart.totalAmount;
+                itemMinecart.setItems(slot, amount);
+                if (itemMinecart.totalAmount == 0) {
+                    containingMinecarts.remove(i);
+                }
+            }
+        }
+        if (newMinecart) {
+            containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
+            this.amount += amount;
+        }
+    }
+
+    public ItemStack visualItemStack;
+    public int amount;
+    public List<ItemMinecart> containingMinecarts = new ArrayList<ItemMinecart>();
 }
