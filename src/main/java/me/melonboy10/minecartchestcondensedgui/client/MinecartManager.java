@@ -25,12 +25,21 @@ public class MinecartManager {
     public static boolean running = false;
     static int index = 0;
 
+    static CondensedItemScreen gui;
+
     public static void indexContents(List<ItemStack> contents) {
         System.out.println("Indexing");
         if (running) {
             for (int i = 0; i < contents.size() && i < 27; i++) {
                 ItemStack itemStack = contents.get(i);
                 itemsToMinecart.put(itemStack, minecartEntities.get(index));
+                gui.items.add(itemStack);
+                gui.addItems(minecartEntities.get(index), itemStack, i);
+            }
+            for (int i = 27; i < contents.size() && i < 63; i++) {
+                ItemStack itemStack = contents.get(i);
+                System.out.println("Adding item " + itemStack.toString() + " to inventory slot " + (i-27));
+                gui.playerItems.set(i-27, itemStack);
             }
 
             if (!checkFinished()) {
@@ -76,7 +85,8 @@ public class MinecartManager {
 
 //new CondensedItemScreenHandler(client.player.getInventory(), new SimpleInventory(itemsToMinecart.keySet().toArray(ItemStack[]::new)))
 //        MinecraftClient.getInstance().setScreen(new CondensedItemScreen(new LiteralText("Minecarts")));
-        MinecraftClient.getInstance().setScreen(new CondensedItemScreen(new LiteralText("Test")));
+        gui = new CondensedItemScreen();
+        MinecraftClient.getInstance().setScreen(gui);
     }
 
     public static void end() {
