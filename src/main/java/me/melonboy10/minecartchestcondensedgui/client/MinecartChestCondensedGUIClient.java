@@ -13,6 +13,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.GenericContainerScreenHandler;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Hand;
@@ -24,6 +25,8 @@ import java.util.HashMap;
 
 @Environment(EnvType.CLIENT)
 public class MinecartChestCondensedGUIClient implements ClientModInitializer {
+
+    public static ArrayList<Integer> syncIds = new ArrayList<Integer>();
 
     private static KeyBinding keyBinding;
 
