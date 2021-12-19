@@ -4,30 +4,25 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryListener;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 
 import java.util.List;
-import java.util.Objects;
 
 public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHandler> {
 
-    static final SimpleInventory INVENTORY = new SimpleInventory(45);
+    static final NotSimpleInventory INVENTORY = new NotSimpleInventory(27);
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final Identifier TEXTURE = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
 
@@ -36,12 +31,19 @@ public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHan
     private TextFieldWidget searchBox;
     private List<Slot> slots;
 
+    // Settings
+    enum GUISize {SMALL, MEDIUM, LARGE, SCALE}
+    GUISize guiSize = GUISize.SCALE;
+
     public ScreenTest() {
-        super(new ScreenTestHandler(), client.player.getInventory(), new LiteralText("Minecart thing"));
+        super(new ScreenTestHandler(), client.player.getInventory(), new LiteralText("Minecart GUI"));
         client.player.currentScreenHandler = this.handler;
         this.passEvents = true;
         this.backgroundHeight = 172;
         this.backgroundWidth = 193;
+
+        this.titleY += 2;
+        this.playerInventoryTitleY += (this.height - 220) + 6;
     }
 
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
@@ -55,14 +57,29 @@ public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHan
     @Override
     protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        this.drawTexture(matrices, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
-        this.searchBox.render(matrices, mouseX, mouseY, delta);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, TEXTURE);
+
+        if (guiSize.equals(GUISize.SCALE)) {
+            int numberOfAddedRows = (this.height - 220) / 18;
+            this.y = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
+
+            this.drawTexture(matrices, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight);
+            for (int i = 0; i < numberOfAddedRows; i++) {
+                this.drawTexture(matrices, this.x, this.y + 72 + (17 * i), 0, 54, 193, 17);
+            }
+            this.drawTexture(matrices, this.x, this.y + 72 + numberOfAddedRows * 17, 0, 72, this.backgroundWidth, this.backgroundHeight - 72);
+        }
+
+
+
+
+        this.searchBox.render(matrices, mouseX, mouseY, delta);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+
+//        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+//        RenderSystem.setShaderTexture(0, TEXTURE);
         if (true) {
 //            this.drawTexture(matrices, i, j + (int)((float)(k - j - 17) * this.scrollPosition), 232 + (this.hasScrollbar() ? 0 : 12), 0, 12, 15);
         }
@@ -90,20 +107,19 @@ public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHan
             this.parent = client.player.playerScreenHandler;
             PlayerInventory playerInventory = client.player.getInventory();
 
-            for(int i = 0; i < 3; ++i) {
+            for(int i = 0; i < INVENTORY.size() / 9; ++i) {
                 for(int j = 0; j < 9; ++j) {
                     this.addSlot(new Slot(INVENTORY, i * 9 + j, 8 + j * 18, 20 + i * 18));
                 }
             }
 
+            for(int i = 0; i < 9; ++i) {
+                this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 148));
+            }
             for(int i = 0; i < 3; ++i) {
                 for(int j = 0; j < 9; ++j) {
-                    this.addSlot(new Slot(playerInventory, i * 9 + j, 8 + j * 18, 20 + i * 18));
+                    this.addSlot(new Slot(playerInventory, 9 + i * 9 + j, 8 + j * 18, 90 + i * 18));
                 }
-            }
-
-            for(int i = 0; i < 9; ++i) {
-                this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 90 + i * 18));
             }
 
             this.scrollItems(0.0F);
@@ -115,13 +131,13 @@ public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHan
         }
 
         public void scrollItems(float position) {
-            int i = (this.itemList.size() + 9 - 1) / 9 - 5;
+            int i = (this.itemList.size() + 9 - 1) / 9 - INVENTORY.size() / 9;
             int j = (int)((double)(position * (float)i) + 0.5D);
             if (j < 0) {
                 j = 0;
             }
 
-            for(int k = 0; k < 5; ++k) {
+            for(int k = 0; k < INVENTORY.size() / 9; ++k) {
                 for(int l = 0; l < 9; ++l) {
                     int m = l + (k + j) * 9;
                     if (m >= 0 && m < this.itemList.size()) {
