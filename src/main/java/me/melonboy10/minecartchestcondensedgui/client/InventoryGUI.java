@@ -1,4 +1,4 @@
-package me.melonboy10.minecartchestcondensedgui;
+package me.melonboy10.minecartchestcondensedgui.client;
 
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription;
 import io.github.cottonmc.cotton.gui.widget.*;
@@ -19,7 +19,7 @@ import java.util.List;
 public class InventoryGUI extends LightweightGuiDescription {
 
     // the gui being rendered with all the stuffs. Need todo this
-    public InventoryGUI(HashMap<ItemStack, ChestMinecartEntity> items, PlayerInventory playerInventory) {
+    public InventoryGUI(HashMap<ItemStack, ChestMinecartEntity> items) {
         ItemsListInventory inventory = new ItemsListInventory(items.keySet().toArray(ItemStack[]::new));
 
         inventory.setSize(items.size());
