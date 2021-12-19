@@ -20,7 +20,7 @@ public class SearchTask {
     static ArrayList<ChestMinecartEntity> minecartEntities;
     public static int currentSyncID;
 
-    static boolean running = false;
+    public static boolean running = false;
     static int index = 0;
 
     public static void indexContents(List<ItemStack> contents) {
