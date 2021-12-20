@@ -1,6 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
@@ -68,8 +69,6 @@ public class CondensedItemScreen extends Screen {
         drawMinecartItems(matrices, delta, mouseX, mouseY);
         drawTouchDragStack(matrices, delta, mouseX, mouseY);
         drawPickStack(matrices, delta, mouseX, mouseY);
-        //renderTooltip(matrices, new LiteralText(":D"), mouseX, mouseY );
-//        renderBackgroundTexture(0);
     }
 
     private void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -206,6 +205,26 @@ public class CondensedItemScreen extends Screen {
                 }
             }
         }
+        for (int i = 0; i < 27; i++) {
+            ItemStack inventoryItem = playerItems.get(i);
+            int slotX = this.guiX + 8 + 18*(i % 9);
+            int slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
+                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+                }
+            }
+        }
+        for (int i = 27; i < 36; i++) {
+            ItemStack inventoryItem = playerItems.get(i);
+            int slotX = this.guiX + 8 + 18*(i%9);
+            int slotY = this.guiY + rowCount * 18 + 94;
+            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
+                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+                }
+            }
+        }
     }
 
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -216,21 +235,26 @@ public class CondensedItemScreen extends Screen {
                 ItemStack inventoryItem = items.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
                 String amountString;
-                if (Math.abs(items.get(i).amount) > 999) {
-                    amountString = Float.toString((float)Math.round(((float)(items.get(i).amount)/1000F)*10F)/10F) + "K";
+                if (Math.abs(items.get(i + rowsScrolled*9).amount) > 999) {
+                    amountString = Float.toString((float)Math.round(((float)(items.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
                 } else {
-                    amountString = items.get(i).amount == 1 ? "" : Integer.toString(items.get(i).amount);
+                    amountString = items.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(items.get(i + rowsScrolled*9).amount);
                 }
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, amountString);
+            }
+            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
+                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
+            }
+        }
+        for (int i = 0; i < rowCount * 9; i++) {
+            int slotX = this.guiX + 8 + 18 * (i % 9);
+            int slotY = this.guiY + 20 + 18 * (i / 9);
+            if ((i + rowsScrolled*9) < items.size()) {
+                ItemStack inventoryItem = items.get(i + rowsScrolled * 9).visualItemStack;
                 if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
-                    fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                     if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
                         renderTooltip(matrices, inventoryItem, mouseX, mouseY);
                     }
-                }
-            } else {
-                if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
-                    fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 }
             }
         }
@@ -271,13 +295,77 @@ public class CondensedItemScreen extends Screen {
             if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                System.out.println("Detected same item type new total is: " + virtualItemStack.amount);
+                if (sortFilter == SortFilter.ALPHABETICALLY) {
+                    Collections.sort(items, nameComparator);
+                } else {
+                    Collections.sort(items, quantityComparator);
+                }
             }
         }
         if (newItem) {
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
+            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                Collections.sort(items, nameComparator);
+            } else {
+                Collections.sort(items, quantityComparator);
+            }
         }
     }
+    private Comparator quantityComparator = new Comparator<VirtualItemStack>() {
+        @Override
+        public int compare(VirtualItemStack virtualItemStack1, VirtualItemStack virtualItemStack2) {
+            int difference = virtualItemStack2.amount - virtualItemStack1.amount;
+            if (difference > 0) {
+                return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+            } else if (difference < 0) {
+                return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+            } else {
+                difference = virtualItemStack1.visualItemStack.getName().getString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getName().getString());
+                if (difference > 0) {
+                    return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+                } else if (difference < 0) {
+                    return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+                } else {
+                    difference = virtualItemStack1.visualItemStack.getNbt().toString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getNbt().toString());
+                    if (difference > 0) {
+                        return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+                    } else if (difference < 0) {
+                        return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+        }
+    };
+
+    private Comparator nameComparator = new Comparator<VirtualItemStack>() {
+        @Override
+        public int compare(VirtualItemStack virtualItemStack1, VirtualItemStack virtualItemStack2) {
+            int difference = virtualItemStack1.visualItemStack.getName().getString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getName().getString());
+            if (difference > 0) {
+                return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+            } else if (difference < 0) {
+                return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+            } else {
+                difference = virtualItemStack2.amount - virtualItemStack1.amount;
+                if (difference > 0) {
+                    return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+                } else if (difference < 0) {
+                    return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+                } else {
+                    difference = virtualItemStack1.visualItemStack.getNbt().toString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getNbt().toString());
+                    if (difference > 0) {
+                        return sortDirection == SortDirection.ASCENDING ? 1 : -1;
+                    } else if (difference < 0) {
+                        return sortDirection == SortDirection.ASCENDING ? -1 : 1;
+                    } else {
+                        return 0;
+                    }
+                }
+            }
+        }
+    };
 
     @Override
     public boolean isPauseScreen() { return false; }
