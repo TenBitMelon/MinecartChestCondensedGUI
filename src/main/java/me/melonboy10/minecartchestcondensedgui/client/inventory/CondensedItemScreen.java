@@ -125,12 +125,12 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        for (int i = 0; i < items.size() && i < rowCount * 9; i++) {
-            ItemStack inventoryItem = items.get(i);
+        for (int i = 0; i < eyetems.size() && i < rowCount * 9; i++) {
+            ItemStack inventoryItem = eyetems.get(i).visualItemStack;
             int slotX = this.guiX + 8 + 18*(i%9);
             int slotY = this.guiY + 20 + 18*(i/9);
             itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
-//            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, Integer.toString(eyetems.get(i).amount));
+            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, Integer.toString(eyetems.get(i).amount));
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
@@ -173,7 +173,7 @@ public class CondensedItemScreen extends Screen {
         Boolean newItem = true;
         for (int i = 0; i < eyetems.size(); i++) {
             VirtualItemStack virtualItemStack = eyetems.get(i);
-            if (virtualItemStack.visualItemStack.getNbt() == itemstack.getNbt()) {
+            if (virtualItemStack.visualItemStack.isItemEqual(itemstack)) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
             }
