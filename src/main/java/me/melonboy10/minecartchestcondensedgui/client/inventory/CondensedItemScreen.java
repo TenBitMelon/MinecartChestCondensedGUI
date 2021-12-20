@@ -165,7 +165,9 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-//        rowsScrolled += amount;
+        scrollPosition += (float)amount/((float)(Math.ceil(items.size()/9F) - rowCount));
+        scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+        rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(items.size()/9F) - rowCount));
         return true;
     }
 
@@ -295,20 +297,20 @@ public class CondensedItemScreen extends Screen {
             if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (sortFilter == SortFilter.ALPHABETICALLY) {
-                    Collections.sort(items, nameComparator);
-                } else {
-                    Collections.sort(items, quantityComparator);
-                }
+//                if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                    Collections.sort(items, nameComparator);
+//                } else {
+//                    Collections.sort(items, quantityComparator);
+//                }
             }
         }
         if (newItem) {
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
-            if (sortFilter == SortFilter.ALPHABETICALLY) {
-                Collections.sort(items, nameComparator);
-            } else {
-                Collections.sort(items, quantityComparator);
-            }
+//            if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                Collections.sort(items, nameComparator);
+//            } else {
+//                Collections.sort(items, quantityComparator);
+//            }
         }
     }
     private Comparator quantityComparator = new Comparator<VirtualItemStack>() {
