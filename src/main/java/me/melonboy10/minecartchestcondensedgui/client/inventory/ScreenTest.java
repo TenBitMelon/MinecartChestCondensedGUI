@@ -203,6 +203,7 @@ public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHan
         this.handler.scrollItems(0.0F);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         int i = (this.handler.itemList.size() + 9 - 1) / 9 - 5;
         this.scrollPosition = (float)((double)this.scrollPosition - amount / (double)i);
