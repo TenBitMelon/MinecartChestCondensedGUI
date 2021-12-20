@@ -47,9 +47,6 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
                         (ArrayList<ChestMinecartEntity>) client.player.getWorld().getNonSpectatingEntities(ChestMinecartEntity.class, client.player.getBoundingBox().expand(3))
                             .stream().filter(chestMinecartEntity -> chestMinecartEntity.getDisplayName().getString().equals(displayName)).collect(Collectors.toList());
 
-                    MinecartManager.minecartEntities.forEach(minecart -> minecart.getWorld().setBlockState(minecart.getBlockPos().add(0, 2, 0), new Block(AbstractBlock.Settings.of(Material.GLASS)).getDefaultState(), 18));
-
-                    System.out.println("Found carts");
                     MinecartManager.start();
                 }
             }

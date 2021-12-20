@@ -24,6 +24,11 @@ public class CondensedItemScreen extends Screen {
     private final int backgroundHeight = 172;
     private final int backgroundWidth = 193;
 
+    enum SortDirection {ASCENDING, DESCENDING}
+    enum SortFilter {QUANTITY, ALPHABETICALLY}
+    private SortDirection sortDirection = SortDirection.ASCENDING;
+    private SortFilter sortFilter = SortFilter.QUANTITY;
+
     private int guiX;
     private int guiY;
 
@@ -67,7 +72,6 @@ public class CondensedItemScreen extends Screen {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
 
-
         int numberOfAddedRows = rowCount - 3;
         this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
         this.guiX = (this.width - this.backgroundWidth) / 2;
@@ -80,7 +84,9 @@ public class CondensedItemScreen extends Screen {
     }
 
     public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-//        this.drawTexture();
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, GRID);
+        this.drawTexture(matrices, guiX - 18, guiY, 0, 176, 16, 16);
     }
 
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
