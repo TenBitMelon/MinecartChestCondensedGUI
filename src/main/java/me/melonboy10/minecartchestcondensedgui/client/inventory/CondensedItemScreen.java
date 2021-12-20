@@ -95,7 +95,7 @@ public class CondensedItemScreen extends Screen {
 
     private void drawScrollBar(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         int scrollBarX = this.guiX + 174;
-        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 16) * this.scrollPosition);
+        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 17) * this.scrollPosition);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
         if (rowCount >= Math.ceil(eyetems.size()/9F)) {
