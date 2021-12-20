@@ -18,8 +18,9 @@ public class VirtualItemStack {
             ItemMinecart itemMinecart = containingMinecarts.get(i);
             if (itemMinecart.minecart == minecart) {
                 newMinecart = false;
-                this.amount += amount - itemMinecart.totalAmount;
+                int previousAmount = itemMinecart.totalAmount;
                 itemMinecart.setItems(slot, amount);
+                this.amount += itemMinecart.totalAmount - previousAmount;
                 if (itemMinecart.totalAmount == 0) {
                     containingMinecarts.remove(i);
                 }

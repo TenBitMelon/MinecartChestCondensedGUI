@@ -40,7 +40,6 @@ public class MinecartManager {
             }
             for (int i = 27; i < contents.size() && i < 63; i++) {
                 ItemStack itemStack = contents.get(i);
-                System.out.println("Adding item " + itemStack.toString() + " to inventory slot " + (i-27));
                 gui.playerItems.set(i-27, itemStack);
             }
 
