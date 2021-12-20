@@ -94,8 +94,9 @@ public class CondensedItemScreen extends Screen {
     }
 
     public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, GRID);
+        for (int i = 0, j = 0; j < 4; i++, j++) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GRID);
 
             int x = guiX - 18;
             int y = guiY + 8 + (j * 18);
@@ -106,7 +107,7 @@ public class CondensedItemScreen extends Screen {
                 case 5 -> { if (showCraftingTable) i++; }
             }
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
-                this.drawTexture(matrices, x, y, i * 16, 192, 16, 16);
+                this.drawTexture(matrices, x, y, 213, i * 16, 16, 16);
                 renderTooltip(matrices, new LiteralText(switch (j) {
                     case 0 -> "Sort Nearby Minecarts"; // Sort Carts
                     case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
@@ -115,7 +116,7 @@ public class CondensedItemScreen extends Screen {
                     default -> throw new IllegalStateException("Unexpected value: " + j);
                 }), mouseX, mouseY);
             } else {
-                this.drawTexture(matrices, x, y, i * 16, 176, 16, 16);
+                this.drawTexture(matrices, x, y, 197, i * 16, 16, 16);
             }
             if (i == 1 || i == 3 || i == 5) i++;
         }
