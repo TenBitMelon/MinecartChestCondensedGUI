@@ -4,27 +4,19 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.AbstractFurnaceScreenHandler;
-import net.minecraft.screen.GrindstoneScreenHandler;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Matrix4f;
-import org.apache.logging.log4j.core.layout.CsvLogEventLayout;
-import org.jetbrains.annotations.NotNull;
-import org.lwjgl.system.CallbackI;
+import net.minecraft.util.math.MathHelper;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class CondensedItemScreen extends Screen {
     private static final Identifier GRID = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
@@ -62,6 +54,7 @@ public class CondensedItemScreen extends Screen {
         drawGrid(matrices, delta, mouseX, mouseY);
         drawLabels(matrices, delta, mouseX, mouseY);
         drawSearchBox(matrices, delta, mouseX, mouseY);
+        drawScrollBar(matrices, delta, mouseX, mouseY);
         drawPlayerInventory(matrices, delta, mouseX, mouseY);
         drawMinecartItems(matrices, delta, mouseX, mouseY);
         drawTouchDragStack(matrices, delta, mouseX, mouseY);
@@ -93,6 +86,40 @@ public class CondensedItemScreen extends Screen {
 
     private void drawSearchBox(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         searchBox.render(matrices, mouseX, mouseY, delta);
+    }
+
+    private void drawScrollBar(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        int scrollBarX = this.guiX + 174;
+        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount + 3) * 18) * this.scrollPosition);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, GRID);
+        if (rowCount >= Math.ceil(items.size()/9F)) {
+            this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
+        } else {
+            this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
+        }
+
+        fillGradient(matrices, this.guiX + 174, this.guiY + 20, this.guiX + 174 + 12, this.guiY + 18 + rowCount * 18, 1347420415, 1347420415, 200);
+    }
+
+    protected boolean isClickInScrollbar(double mouseX, double mouseY) {
+        int x1 = this.guiX + 174;
+        int y1 = this.guiY + 20;
+        int x2 = x1 + 12;
+        int y2 = y1 - 2 + rowCount * 18;
+        return mouseX >= (double)x1 && mouseY >= (double)y1 && mouseX < (double)x2 && mouseY < (double)y2;
+    }
+
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(items.size()/9F)) {
+            int y1 = this.guiY + 20;
+            int y2 = y1 + 30 + (rowCount + 3) * 18;
+
+            this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15.0F);
+            this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+            return true;
+        }
+        return false;
     }
 
     private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {
