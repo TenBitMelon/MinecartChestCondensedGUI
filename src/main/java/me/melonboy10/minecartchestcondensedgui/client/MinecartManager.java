@@ -32,9 +32,11 @@ public class MinecartManager {
         if (running) {
             for (int i = 0; i < contents.size() && i < 27; i++) {
                 ItemStack itemStack = contents.get(i);
-                itemsToMinecart.put(itemStack, minecartEntities.get(index));
-                gui.items.add(itemStack);
-                gui.addItems(minecartEntities.get(index), itemStack, i);
+                if (itemStack != null && !itemStack.equals(ItemStack.EMPTY)) {
+                    itemsToMinecart.put(itemStack, minecartEntities.get(index));
+                    gui.items.add(itemStack);
+                    gui.addItems(minecartEntities.get(index), itemStack, i);
+                }
             }
             for (int i = 27; i < contents.size() && i < 63; i++) {
                 ItemStack itemStack = contents.get(i);
@@ -77,10 +79,13 @@ public class MinecartManager {
             itemsToMinecart.clear();
             currentSyncID = 0;
             index = 0;
-
-            pickMinecart();
-            System.out.println("Start");
-            System.out.println(minecartEntities);
+            if (minecartEntities.isEmpty()) {
+                end();
+            } else {
+                pickMinecart();
+                System.out.println("Start");
+                System.out.println(minecartEntities);
+            }
         }
 
 //new CondensedItemScreenHandler(client.player.getInventory(), new SimpleInventory(itemsToMinecart.keySet().toArray(ItemStack[]::new)))
