@@ -60,6 +60,7 @@ public class CondensedItemScreen extends Screen {
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
     public List<VirtualItemStack> items = new ArrayList<>();
+    public List<VirtualItemStack> searchedItems = new ArrayList<>();
     public List<ItemStack> playerItems = new ArrayList<>();
     private int hoveredSlot;
     private ItemStack touchDragStack = ItemStack.EMPTY;
@@ -71,9 +72,6 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-//        if (items.size() >= 2) {
-//            pickStack = items.get(1);
-//        }
         renderBackground(matrices);
         drawGrid(matrices, delta, mouseX, mouseY);
         drawButtons(matrices, delta, mouseX, mouseY);
@@ -149,7 +147,7 @@ public class CondensedItemScreen extends Screen {
         int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 17) * this.scrollPosition);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
-        if (rowCount >= Math.ceil(items.size()/9F)) {
+        if (rowCount >= Math.ceil(searchedItems.size()/9F)) {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
@@ -194,14 +192,14 @@ public class CondensedItemScreen extends Screen {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < items.size()) {
-                ItemStack inventoryItem = items.get(i + rowsScrolled*9).visualItemStack;
+            if ((i + rowsScrolled*9) < searchedItems.size()) {
+                ItemStack inventoryItem = searchedItems.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
                 String amountString;
-                if (Math.abs(items.get(i + rowsScrolled*9).amount) > 999) {
-                    amountString = Float.toString((float)Math.round(((float)(items.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
+                if (searchedItems.get(i + rowsScrolled*9).amount > 999) {
+                    amountString = Float.toString((float)Math.round(((float)(searchedItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
                 } else {
-                    amountString = items.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(items.get(i + rowsScrolled*9).amount);
+                    amountString = searchedItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(searchedItems.get(i + rowsScrolled*9).amount);
                 }
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, amountString);
             }
@@ -212,8 +210,8 @@ public class CondensedItemScreen extends Screen {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < items.size()) {
-                ItemStack inventoryItem = items.get(i + rowsScrolled * 9).visualItemStack;
+            if ((i + rowsScrolled*9) < searchedItems.size()) {
+                ItemStack inventoryItem = searchedItems.get(i + rowsScrolled * 9).visualItemStack;
                 if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                     if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
                         renderTooltip(matrices, inventoryItem, mouseX, mouseY);
@@ -241,14 +239,14 @@ public class CondensedItemScreen extends Screen {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (isMouseOver(mouseX, mouseY, this.guiX + 174, this.guiY + 20, this.guiX + 186, this.guiY + 18 + rowCount * 18) &&
-            rowCount < Math.ceil(items.size()/9F) || scrolling) {
+            rowCount < Math.ceil(searchedItems.size()/9F) || scrolling) {
             int y1 = this.guiY + 20;
             int y2 = y1 + (rowCount) * 18;
 
             this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15F);
             this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
 
-            rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(items.size()/9F) - rowCount));
+            rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(searchedItems.size()/9F) - rowCount));
             scrolling = true;
             return true;
         }
@@ -257,10 +255,10 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (rowCount < Math.ceil(items.size()/9F)) {
-            scrollPosition -= (float) amount / ((float) (Math.ceil(items.size() / 9F) - rowCount));
+        if (rowCount < Math.ceil(searchedItems.size()/9F)) {
+            scrollPosition -= (float) amount / ((float) (Math.ceil(searchedItems.size() / 9F) - rowCount));
             scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
-            rowsScrolled = Math.round(scrollPosition * (float) (Math.ceil(items.size() / 9F) - rowCount));
+            rowsScrolled = Math.round(scrollPosition * (float) (Math.ceil(searchedItems.size() / 9F) - rowCount));
         }
         return true;
     }
@@ -293,6 +291,7 @@ public class CondensedItemScreen extends Screen {
                             } else {
                                 items.sort(quantityComparator);
                             }
+                            search();
                         }
                         case 2 -> { // sort filter
                             sortFilter = sortFilter.other();
@@ -301,6 +300,7 @@ public class CondensedItemScreen extends Screen {
                             } else {
                                 items.sort(quantityComparator);
                             }
+                            search();
                         }
                         case 3 -> { // crafting table
                                 showCraftingTable = !showCraftingTable;
@@ -324,6 +324,45 @@ public class CondensedItemScreen extends Screen {
                 ItemStack inbetweenie = mouseStack.copy();
                 mouseStack = playerItems.get(hoveredSlot);
                 playerItems.set(hoveredSlot, inbetweenie);
+            }
+        }
+    }
+
+    public boolean charTyped(char chr, int modifiers) {
+        String string = this.searchBox.getText();
+        if(this.searchBox.charTyped(chr, modifiers)) {
+            if (!Objects.equals(string, this.searchBox.getText())) {
+                search();
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        String string = this.searchBox.getText();
+        if(this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
+            if (!Objects.equals(string, this.searchBox.getText())) {
+                search();
+            }
+            return true;
+        } else {
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+    }
+
+    private void search() {
+        searchedItems.clear();
+        for (VirtualItemStack testedStack : items) {
+            if (searchBox.getText() == "") {
+                searchedItems.add(testedStack);
+            } else if (Character.toString( searchBox.getText().charAt(0)) == "@") {
+                searchedItems.add(testedStack);
+            } else {
+                if (testedStack.visualItemStack.getName().getString().toLowerCase().matches(".*\\Q" + searchBox.getText().toLowerCase() + "\\E.*")) {
+                    searchedItems.add(testedStack);
+                }
             }
         }
     }
@@ -377,6 +416,7 @@ public class CondensedItemScreen extends Screen {
                 } else {
                     items.sort(quantityComparator);
                 }
+                search();
             }
         }
         if (newItem) {
@@ -386,6 +426,7 @@ public class CondensedItemScreen extends Screen {
             } else {
                 items.sort(quantityComparator);
             }
+            search();
         }
     }
 
