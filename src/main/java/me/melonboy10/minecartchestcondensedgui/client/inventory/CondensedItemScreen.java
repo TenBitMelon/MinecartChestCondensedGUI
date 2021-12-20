@@ -16,6 +16,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.util.*;
@@ -29,10 +30,27 @@ public class CondensedItemScreen extends Screen {
     private final int backgroundHeight = 172;
     private final int backgroundWidth = 193;
 
-    enum SortDirection {ASCENDING, DESCENDING}
-    enum SortFilter {QUANTITY, ALPHABETICALLY}
-    private SortDirection sortDirection = SortDirection.ASCENDING;
-    private SortFilter sortFilter = SortFilter.QUANTITY;
+    enum SortDirection {ASCENDING, DESCENDING;
+
+        public SortDirection other() {
+            if (this.equals(ASCENDING))
+                return DESCENDING;
+            else
+                return ASCENDING;
+        }
+    }
+    enum SortFilter {QUANTITY, ALPHABETICALLY;
+
+        public SortFilter other() {
+            if (this.equals(QUANTITY))
+                return ALPHABETICALLY;
+            else
+                return QUANTITY;
+        }
+    }
+    private static SortDirection sortDirection = SortDirection.ASCENDING;
+    private static SortFilter sortFilter = SortFilter.QUANTITY;
+    private static boolean showCraftingTable = false;
 
     private int guiX;
     private int guiY;
@@ -95,23 +113,38 @@ public class CondensedItemScreen extends Screen {
             int y = guiY + 8 + (j * 18);
 
             switch (i) {
-                case 1 -> {
-                    if (sortDirection.equals(SortDirection.ASCENDING)) i++;
-                }
-
-                case 3 -> {
-                    if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++;
-                }
+                case 1 -> { if (sortDirection.equals(SortDirection.ASCENDING)) i++; }
+                case 3 -> { if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++; }
+                case 5 -> { if (showCraftingTable) i++; }
             }
-
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
                 this.drawTexture(matrices, x, y, i * 16, 192, 16, 16);
             } else {
                 this.drawTexture(matrices, x, y, i * 16, 176, 16, 16);
             }
+            if (i == 1 || i == 3 || i == 5) i++;
+        }
+    }
 
-            if (i == 1 || i == 3) {
-                i++;
+    public void checkButtons(double mouseX, double mouseY) {
+        if (isMouseOver(mouseX, mouseY, guiX - 18, guiY + 8, guiX + 2, guiY + 72)) {
+            for (int i = 0; i < 4; i++) {
+                int x = guiX - 18;
+                int y = guiY + 8 + (i * 18);
+
+                if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (i * 18))) {
+                    switch (i) {
+                        case 0 -> { // sort minecarts
+//                            sortMinecarts();
+                        }
+                        case 1 -> // sort direction
+                            sortDirection = sortDirection.other();
+                        case 2 -> // sort filter
+                            sortFilter = sortFilter.other();
+                        case 3 -> // crafting table
+                            showCraftingTable = !showCraftingTable;
+                    }
+                }
             }
         }
     }
@@ -165,7 +198,7 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        scrollPosition += (float)amount/((float)(Math.ceil(items.size()/9F) - rowCount));
+        scrollPosition -= (float)amount/((float)(Math.ceil(items.size()/9F) - rowCount));
         scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
         rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(items.size()/9F) - rowCount));
         return true;
@@ -173,8 +206,7 @@ public class CondensedItemScreen extends Screen {
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         mouseDragged(mouseX, mouseY, button, 0, 0);
-
-//        checkButtons(mouseX, mouseY);
+        checkButtons(mouseX, mouseY);
 //        checkItems()
 
         return super.mouseClicked(mouseX, mouseY, button);
@@ -293,24 +325,25 @@ public class CondensedItemScreen extends Screen {
 
     public void addItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
         boolean newItem = true;
-        for (VirtualItemStack virtualItemStack : items) {
+        for (int i = 0; i < items.size(); i++) {
+            VirtualItemStack virtualItemStack = items.get(i);
             if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-//                if (sortFilter == SortFilter.ALPHABETICALLY) {
-//                    Collections.sort(items, nameComparator);
-//                } else {
-//                    Collections.sort(items, quantityComparator);
-//                }
+                if (sortFilter == SortFilter.ALPHABETICALLY) {
+                    Collections.sort(items, nameComparator);
+                } else {
+                    Collections.sort(items, quantityComparator);
+                }
             }
         }
         if (newItem) {
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
-//            if (sortFilter == SortFilter.ALPHABETICALLY) {
-//                Collections.sort(items, nameComparator);
-//            } else {
-//                Collections.sort(items, quantityComparator);
-//            }
+            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                Collections.sort(items, nameComparator);
+            } else {
+                Collections.sort(items, quantityComparator);
+            }
         }
     }
     private Comparator quantityComparator = new Comparator<VirtualItemStack>() {
