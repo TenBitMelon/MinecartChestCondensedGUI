@@ -4,7 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.widget.ToggleButtonWidget;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
@@ -17,6 +19,8 @@ import net.minecraft.util.math.MathHelper;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class CondensedItemScreen extends Screen {
     private static final Identifier GRID = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
@@ -74,7 +78,7 @@ public class CondensedItemScreen extends Screen {
 
         int numberOfAddedRows = rowCount - 3;
         this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
-        this.guiX = (this.width - this.backgroundWidth) / 2;
+        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
 
         this.drawTexture(matrices, this.guiX, this.guiY, 0, 0, this.backgroundWidth, this.backgroundHeight);
         for (int i = 0; i < numberOfAddedRows; i++) {
@@ -86,7 +90,31 @@ public class CondensedItemScreen extends Screen {
     public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
-        this.drawTexture(matrices, guiX - 18, guiY, 0, 176, 16, 16);
+
+        for (int i = 0, j = 0; j < 4; i++, j++) {
+            int x = guiX - 18;
+            int y = guiY + 8 + (j * 18);
+
+            switch (i) {
+                case 1 -> {
+                    if (sortDirection.equals(SortDirection.ASCENDING)) i++;
+                }
+
+                case 3 -> {
+                    if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++;
+                }
+            }
+
+            if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
+                this.drawTexture(matrices, x, y, i * 16, 192, 16, 16);
+            } else {
+                this.drawTexture(matrices, x, y, i * 16, 176, 16, 16);
+            }
+
+            if (i == 1 || i == 3) {
+                i++;
+            }
+        }
     }
 
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -110,12 +138,16 @@ public class CondensedItemScreen extends Screen {
         }
     }
 
+    private boolean isMouseOver(double mouseX, double mouseY, int x1, int y1, int x2, int y2) {
+        return mouseX >= (double)x1 && mouseY >= (double)y1 && mouseX < (double)x2 && mouseY < (double)y2;
+    }
+
     protected boolean isClickInScrollbar(double mouseX, double mouseY) {
         int x1 = this.guiX + 174;
         int y1 = this.guiY + 20;
         int x2 = x1 + 12;
         int y2 = y1 - 2 + rowCount * 18;
-        return mouseX >= (double)x1 && mouseY >= (double)y1 && mouseX < (double)x2 && mouseY < (double)y2;
+        return isMouseOver(mouseX, mouseY, x1, y1, x2, y2);
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
@@ -133,13 +165,17 @@ public class CondensedItemScreen extends Screen {
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        scrolling = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+//        rowsScrolled += amount;
+        return true;
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         mouseDragged(mouseX, mouseY, button, 0, 0);
+
+//        checkButtons(mouseX, mouseY);
+//        checkItems()
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -230,9 +266,8 @@ public class CondensedItemScreen extends Screen {
     }
 
     public void addItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
-        Boolean newItem = true;
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack virtualItemStack = items.get(i);
+        boolean newItem = true;
+        for (VirtualItemStack virtualItemStack : items) {
             if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
@@ -246,4 +281,5 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() { return false; }
+
 }
