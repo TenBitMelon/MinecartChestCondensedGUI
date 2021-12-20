@@ -56,8 +56,8 @@ public class CondensedItemScreen extends Screen {
     private TextFieldWidget searchBox;
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
-    public List<VirtualItemStack> items = new ArrayList<VirtualItemStack>();
-    public List<ItemStack> playerItems = new ArrayList<ItemStack>();
+    public List<VirtualItemStack> items = new ArrayList<>();
+    public List<ItemStack> playerItems = new ArrayList<>();
     private ItemStack touchDragStack = ItemStack.EMPTY;
     private ItemStack pickStack = ItemStack.EMPTY;
 
@@ -98,10 +98,10 @@ public class CondensedItemScreen extends Screen {
     }
 
     public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, GRID);
-
         for (int i = 0, j = 0; j < 4; i++, j++) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GRID);
+
             int x = guiX - 18;
             int y = guiY + 8 + (j * 18);
 
@@ -112,6 +112,13 @@ public class CondensedItemScreen extends Screen {
             }
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
                 this.drawTexture(matrices, x, y, i * 16, 192, 16, 16);
+                renderTooltip(matrices, new LiteralText(switch (j) {
+                    case 0 -> "Sort Nearby Minecarts"; // Sort Carts
+                    case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
+                    case 2 -> sortFilter.equals(SortFilter.QUANTITY) ? "Sorting Quantity" : "Sorting Alphabetically"; // Sort Filter
+                    case 3 -> showCraftingTable ? "Showing Crafting Table" : "Hiding Crafting Table"; // Crafting table
+                    default -> throw new IllegalStateException("Unexpected value: " + j);
+                }), mouseX, mouseY);
             } else {
                 this.drawTexture(matrices, x, y, i * 16, 176, 16, 16);
             }
@@ -237,8 +244,10 @@ public class CondensedItemScreen extends Screen {
         return mouseX >= (double)x1 && mouseY >= (double)y1 && mouseX < (double)x2 && mouseY < (double)y2;
     }
 
+    @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isMouseOver(mouseX, mouseY, this.guiX + 174, this.guiY + 20, this.guiX + 186, this.guiY + 18 + rowCount * 18) && rowCount < Math.ceil(items.size()/9F) || scrolling) {
+        if (isMouseOver(mouseX, mouseY, this.guiX + 174, this.guiY + 20, this.guiX + 186, this.guiY + 18 + rowCount * 18) &&
+            rowCount < Math.ceil(items.size()/9F) || scrolling) {
             int y1 = this.guiY + 20;
             int y2 = y1 + (rowCount) * 18;
 
@@ -252,6 +261,7 @@ public class CondensedItemScreen extends Screen {
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         scrollPosition -= (float)amount/((float)(Math.ceil(items.size()/9F) - rowCount));
         scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
@@ -259,6 +269,7 @@ public class CondensedItemScreen extends Screen {
         return true;
     }
 
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         scrolling = false;
         mouseDragged(mouseX, mouseY, button, 0, 0);
@@ -303,11 +314,12 @@ public class CondensedItemScreen extends Screen {
         }
     }
 
+    @Override
     protected void init() {
         super.init();
         rowCount = (this.height - 220) / 18 + 3;
         this.guiY = (this.height - this.backgroundHeight - (rowCount - 3) * 18) / 2;
-        this.guiX = (this.width - this.backgroundWidth) / 2;
+        this.guiX = (this.width - this.backgroundWidth - 17) / 2;
         for (int i = 0; i < 36; i++) {
             playerItems.add(ItemStack.EMPTY);
         }
@@ -399,6 +411,7 @@ public class CondensedItemScreen extends Screen {
         }
     };
 
+    @Override
     public boolean isPauseScreen() { return false; }
 
 }
