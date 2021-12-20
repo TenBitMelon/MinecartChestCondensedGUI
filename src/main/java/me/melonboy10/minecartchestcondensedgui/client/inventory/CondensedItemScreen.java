@@ -30,13 +30,12 @@ public class CondensedItemScreen extends Screen {
     private int rowCount;
 
     private float scrollPosition;
+    private int rowsScrolled;
     private boolean scrolling = false;
     private TextFieldWidget searchBox;
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
-    public List<VirtualItemStack> eyetems = new ArrayList<VirtualItemStack>();
-
-    public List<ItemStack> items = new ArrayList<ItemStack>();
+    public List<VirtualItemStack> items = new ArrayList<VirtualItemStack>();
     public List<ItemStack> playerItems = new ArrayList<ItemStack>();
     private ItemStack touchDragStack = ItemStack.EMPTY;
     private ItemStack pickStack = ItemStack.EMPTY;
@@ -85,8 +84,8 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        textRenderer.draw(matrices, "Minecarts", (this.guiX + 8), (this.guiY + 9), 0);
-        textRenderer.draw(matrices, "Inventory", (this.guiX + 8), (this.guiY + rowCount*18 + 25), 0);
+        textRenderer.draw(matrices, "Minecarts", (this.guiX + 8), (this.guiY + 9), 4210752);
+        textRenderer.draw(matrices, "Inventory", (this.guiX + 8), (this.guiY + rowCount*18 + 25), 4210752);
     }
 
     private void drawSearchBox(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -98,7 +97,7 @@ public class CondensedItemScreen extends Screen {
         int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 17) * this.scrollPosition);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
-        if (rowCount >= Math.ceil(eyetems.size()/9F)) {
+        if (rowCount >= Math.ceil(items.size()/9F)) {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
@@ -114,12 +113,14 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(eyetems.size()/9F) || scrolling) {
+        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(items.size()/9F) || scrolling) {
             int y1 = this.guiY + 20;
             int y2 = y1 + (rowCount) * 18;
 
             this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15F);
             this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+
+            rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(items.size()/9F) - rowCount));
             scrolling = true;
             return true;
         }
@@ -164,14 +165,14 @@ public class CondensedItemScreen extends Screen {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
-            if (i < eyetems.size()) {
-                ItemStack inventoryItem = eyetems.get(i).visualItemStack;
+            if ((i + rowsScrolled*9) < items.size()) {
+                ItemStack inventoryItem = items.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
                 String amountString;
-                if (Math.abs(eyetems.get(i).amount) > 999) {
-                    amountString = Float.toString((float)Math.round(((float)(eyetems.get(i).amount)/1000F)*10F)/10F) + "K";
+                if (Math.abs(items.get(i).amount) > 999) {
+                    amountString = Float.toString((float)Math.round(((float)(items.get(i).amount)/1000F)*10F)/10F) + "K";
                 } else {
-                    amountString = eyetems.get(i).amount == 1 ? "" : Integer.toString(eyetems.get(i).amount);
+                    amountString = items.get(i).amount == 1 ? "" : Integer.toString(items.get(i).amount);
                 }
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, amountString);
                 if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
@@ -219,16 +220,16 @@ public class CondensedItemScreen extends Screen {
 
     public void addItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
         Boolean newItem = true;
-        for (int i = 0; i < eyetems.size(); i++) {
-            VirtualItemStack virtualItemStack = eyetems.get(i);
-            if (virtualItemStack.visualItemStack.isItemEqual(itemstack)) {
+        for (int i = 0; i < items.size(); i++) {
+            VirtualItemStack virtualItemStack = items.get(i);
+            if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
                 System.out.println("Detected same item type new total is: " + virtualItemStack.amount);
             }
         }
         if (newItem) {
-            eyetems.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
+            items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
         }
     }
 

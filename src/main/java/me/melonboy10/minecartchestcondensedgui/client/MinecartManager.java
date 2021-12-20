@@ -34,7 +34,6 @@ public class MinecartManager {
                 ItemStack itemStack = contents.get(i);
                 if (itemStack != null && !itemStack.equals(ItemStack.EMPTY)) {
                     itemsToMinecart.put(itemStack, minecartEntities.get(index));
-                    gui.items.add(itemStack);
                     gui.addItems(minecartEntities.get(index), itemStack, i);
                 }
             }
