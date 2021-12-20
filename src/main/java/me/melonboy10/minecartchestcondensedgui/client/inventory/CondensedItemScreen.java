@@ -205,6 +205,7 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        scrolling = false;
         mouseDragged(mouseX, mouseY, button, 0, 0);
         checkButtons(mouseX, mouseY);
 //        checkItems()
