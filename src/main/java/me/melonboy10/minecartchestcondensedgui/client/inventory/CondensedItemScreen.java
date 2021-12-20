@@ -30,7 +30,7 @@ public class CondensedItemScreen extends Screen {
     private int rowCount;
 
     private float scrollPosition;
-    private boolean scrolling;
+    private boolean scrolling = false;
     private TextFieldWidget searchBox;
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
@@ -42,7 +42,7 @@ public class CondensedItemScreen extends Screen {
     private ItemStack pickStack = ItemStack.EMPTY;
 
     public CondensedItemScreen() {
-        super(new LiteralText("Condensed Minecart GUI"));
+        super(new LiteralText("Condensed Minecarts"));
     }
 
     @Override
@@ -52,6 +52,7 @@ public class CondensedItemScreen extends Screen {
 //        }
         renderBackground(matrices);
         drawGrid(matrices, delta, mouseX, mouseY);
+        drawButtons(matrices, delta, mouseX, mouseY);
         drawLabels(matrices, delta, mouseX, mouseY);
         drawSearchBox(matrices, delta, mouseX, mouseY);
         drawScrollBar(matrices, delta, mouseX, mouseY);
@@ -79,6 +80,10 @@ public class CondensedItemScreen extends Screen {
         this.drawTexture(matrices, this.guiX, this.guiY + 72 + numberOfAddedRows * 18, 0, 72, this.backgroundWidth, this.backgroundHeight - 72);
     }
 
+    public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        this.drawTexture();
+    }
+
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         textRenderer.draw(matrices, "Minecarts", (this.guiX + 8), (this.guiY + 9), 0);
         textRenderer.draw(matrices, "Inventory", (this.guiX + 8), (this.guiY + rowCount*18 + 25), 0);
@@ -90,7 +95,7 @@ public class CondensedItemScreen extends Screen {
 
     private void drawScrollBar(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         int scrollBarX = this.guiX + 174;
-        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount + 3) * 18) * this.scrollPosition);
+        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 16) * this.scrollPosition);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
         if (rowCount >= Math.ceil(eyetems.size()/9F)) {
@@ -98,8 +103,6 @@ public class CondensedItemScreen extends Screen {
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
         }
-
-        fillGradient(matrices, this.guiX + 174, this.guiY + 20, this.guiX + 174 + 12, this.guiY + 18 + rowCount * 18, 1347420415, 1347420415, 200);
     }
 
     protected boolean isClickInScrollbar(double mouseX, double mouseY) {
@@ -111,15 +114,21 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(eyetems.size()/9F)) {
+        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(eyetems.size()/9F) || scrolling) {
             int y1 = this.guiY + 20;
-            int y2 = y1 + 30 + (rowCount + 3) * 18;
+            int y2 = y1 + (rowCount) * 18;
 
-            this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15.0F);
+            this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15F);
             this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+            scrolling = true;
             return true;
         }
-        return false;
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        scrolling = false;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {

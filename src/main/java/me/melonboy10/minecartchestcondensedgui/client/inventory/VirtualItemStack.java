@@ -7,13 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VirtualItemStack {
+
+    public ItemStack visualItemStack;
+    public int amount;
+    public List<ItemMinecart> containingMinecarts = new ArrayList<>();
+
     public VirtualItemStack(ItemStack visualItemStack, ChestMinecartEntity minecart, int slot, int amount) {
         this.visualItemStack = visualItemStack;
         this.amount = amount;
         containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
     }
     public void setItems(ChestMinecartEntity minecart, int slot, int amount) {
-        Boolean newMinecart = true;
+        boolean newMinecart = true;
         for (int i = 0; i < containingMinecarts.size(); i++) {
             ItemMinecart itemMinecart = containingMinecarts.get(i);
             if (itemMinecart.minecart == minecart) {
@@ -32,7 +37,29 @@ public class VirtualItemStack {
         }
     }
 
-    public ItemStack visualItemStack;
-    public int amount;
-    public List<ItemMinecart> containingMinecarts = new ArrayList<ItemMinecart>();
+    public static class ItemMinecart {
+
+        public ChestMinecartEntity minecart;
+        public int totalAmount;
+        public List<Integer> itemContainingSlots = new ArrayList<Integer>();
+        public List<Integer> itemSlotAmounts = new ArrayList<Integer>();
+
+        public ItemMinecart(ChestMinecartEntity minecart, int slot, int amount) {
+            this.minecart = minecart;
+            itemContainingSlots.add(slot);
+            itemSlotAmounts.add(amount);
+            totalAmount = amount;
+        }
+        public void setItems(int slot, int amount) {
+            int slotLocation = itemContainingSlots.indexOf(slot);
+            if (slotLocation != -1) {
+                totalAmount += amount - itemSlotAmounts.get(slotLocation);
+                itemSlotAmounts.set(slotLocation, amount);
+            } else {
+                itemContainingSlots.add(slot);
+                itemSlotAmounts.add(amount);
+                totalAmount += amount;
+            }
+        }
+    }
 }
