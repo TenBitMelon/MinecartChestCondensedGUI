@@ -263,9 +263,11 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        scrollPosition -= (float)amount/((float)(Math.ceil(items.size()/9F) - rowCount));
-        scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
-        rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(items.size()/9F) - rowCount));
+        if (rowCount < Math.ceil(items.size()/9F)) {
+            scrollPosition -= (float) amount / ((float) (Math.ceil(items.size() / 9F) - rowCount));
+            scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+            rowsScrolled = Math.round(scrollPosition * (float) (Math.ceil(items.size() / 9F) - rowCount));
+        }
         return true;
     }
 
