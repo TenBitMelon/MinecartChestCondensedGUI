@@ -47,9 +47,9 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        if (items.size() >= 2) {
-            pickStack = items.get(1);
-        }
+//        if (items.size() >= 2) {
+//            pickStack = items.get(1);
+//        }
         renderBackground(matrices);
         drawGrid(matrices, delta, mouseX, mouseY);
         drawLabels(matrices, delta, mouseX, mouseY);
@@ -93,7 +93,7 @@ public class CondensedItemScreen extends Screen {
         int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount + 3) * 18) * this.scrollPosition);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, GRID);
-        if (rowCount >= Math.ceil(items.size()/9F)) {
+        if (rowCount >= Math.ceil(eyetems.size()/9F)) {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
@@ -111,7 +111,7 @@ public class CondensedItemScreen extends Screen {
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(items.size()/9F)) {
+        if (isClickInScrollbar(mouseX, mouseY) && rowCount < Math.ceil(eyetems.size()/9F)) {
             int y1 = this.guiY + 20;
             int y2 = y1 + 30 + (rowCount + 3) * 18;
 
@@ -152,16 +152,28 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        for (int i = 0; i < eyetems.size() && i < rowCount * 9; i++) {
-            ItemStack inventoryItem = eyetems.get(i).visualItemStack;
-            int slotX = this.guiX + 8 + 18*(i%9);
-            int slotY = this.guiY + 20 + 18*(i/9);
-            itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
-            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, Integer.toString(eyetems.get(i).amount));
-            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
-                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
-                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+        for (int i = 0; i < rowCount * 9; i++) {
+            int slotX = this.guiX + 8 + 18 * (i % 9);
+            int slotY = this.guiY + 20 + 18 * (i / 9);
+            if (i < eyetems.size()) {
+                ItemStack inventoryItem = eyetems.get(i).visualItemStack;
+                itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
+                String amountString;
+                if (Math.abs(eyetems.get(i).amount) > 999) {
+                    amountString = Float.toString((float)Math.round(((float)(eyetems.get(i).amount)/1000F)*10F)/10F) + "K";
+                } else {
+                    amountString = eyetems.get(i).amount == 1 ? "" : Integer.toString(eyetems.get(i).amount);
+                }
+                itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, amountString);
+                if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
+                    fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
+                    if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                        renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+                    }
+                }
+            } else {
+                if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
+                    fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 }
             }
         }
@@ -203,6 +215,7 @@ public class CondensedItemScreen extends Screen {
             if (virtualItemStack.visualItemStack.isItemEqual(itemstack)) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
+                System.out.println("Detected same item type new total is: " + virtualItemStack.amount);
             }
         }
         if (newItem) {
