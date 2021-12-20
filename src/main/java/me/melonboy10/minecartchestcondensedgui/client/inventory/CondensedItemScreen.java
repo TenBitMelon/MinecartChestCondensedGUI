@@ -1,6 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.block.CraftingTableBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.*;
@@ -20,7 +22,7 @@ import java.util.List;
 public class CondensedItemScreen extends Screen {
     private static final Identifier GRID = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
 
-    private final int backgroundHeight = 172;
+    private int backgroundHeight = 229;
     private final int backgroundWidth = 193;
 
     enum SortDirection {ASCENDING, DESCENDING;
@@ -41,9 +43,10 @@ public class CondensedItemScreen extends Screen {
                 return QUANTITY;
         }
     }
-    private static SortDirection sortDirection = SortDirection.ASCENDING;
+    private static SortDirection sortDirection = SortDirection.DESCENDING;
     private static SortFilter sortFilter = SortFilter.QUANTITY;
-    private static boolean showCraftingTable = false;
+    private static boolean showCraftingTable = true;
+    private BlockPos craftingTableLocation;
 
     private int guiX;
     private int guiY;
@@ -58,8 +61,9 @@ public class CondensedItemScreen extends Screen {
 
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<ItemStack> playerItems = new ArrayList<>();
+    private int hoveredSlot;
     private ItemStack touchDragStack = ItemStack.EMPTY;
-    private ItemStack pickStack = ItemStack.EMPTY;
+    private ItemStack mouseStack = ItemStack.EMPTY;
 
     public CondensedItemScreen() {
         super(new LiteralText("Condensed Minecarts"));
@@ -87,14 +91,19 @@ public class CondensedItemScreen extends Screen {
         RenderSystem.setShaderTexture(0, GRID);
 
         int numberOfAddedRows = rowCount - 3;
-        this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
-        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
+//        this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
+//        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
 
-        this.drawTexture(matrices, this.guiX, this.guiY, 0, 0, this.backgroundWidth, this.backgroundHeight);
+        this.drawTexture(matrices, this.guiX, this.guiY, 0, 0, this.backgroundWidth, this.backgroundHeight - 150); // Top
         for (int i = 0; i < numberOfAddedRows; i++) {
-            this.drawTexture(matrices, this.guiX, this.guiY + 72 + (18 * i), 0, 54, 193, 18);
+            this.drawTexture(matrices, this.guiX, this.guiY + 72 + (18 * i), 0, 54, 193, 25); // Row Segment
         }
-        this.drawTexture(matrices, this.guiX, this.guiY + 72 + numberOfAddedRows * 18, 0, 72, this.backgroundWidth, this.backgroundHeight - 72);
+        if (showCraftingTable && craftingTableLocation != null) {
+            // Crafting Table Segment
+            this.drawTexture(matrices, this.guiX, this.guiY + 78 + numberOfAddedRows * 18, 0, 79, this.backgroundWidth, this.backgroundHeight - 79); // Bottom
+        } else {
+            this.drawTexture(matrices, this.guiX, this.guiY + 78 + numberOfAddedRows * 18, 0, 135, this.backgroundWidth, this.backgroundHeight - 135); // Bottom
+        }
     }
 
     public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -108,10 +117,10 @@ public class CondensedItemScreen extends Screen {
             switch (i) {
                 case 1 -> { if (sortDirection.equals(SortDirection.ASCENDING)) i++; }
                 case 3 -> { if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++; }
-                case 5 -> { if (showCraftingTable) i++; }
+                case 5 -> { if (!showCraftingTable) i++; }
             }
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
-                this.drawTexture(matrices, x, y, i * 16, 192, 16, 16);
+                this.drawTexture(matrices, x, y, 213, i * 16, 16, 16);
                 renderTooltip(matrices, new LiteralText(switch (j) {
                     case 0 -> "Sort Nearby Minecarts"; // Sort Carts
                     case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
@@ -120,15 +129,15 @@ public class CondensedItemScreen extends Screen {
                     default -> throw new IllegalStateException("Unexpected value: " + j);
                 }), mouseX, mouseY);
             } else {
-                this.drawTexture(matrices, x, y, i * 16, 176, 16, 16);
+                this.drawTexture(matrices, x, y, 197, i * 16, 16, 16);
             }
             if (i == 1 || i == 3 || i == 5) i++;
         }
     }
 
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        textRenderer.draw(matrices, "Minecarts", (this.guiX + 8), (this.guiY + 9), 4210752);
-        textRenderer.draw(matrices, "Inventory", (this.guiX + 8), (this.guiY + rowCount*18 + 25), 4210752);
+        textRenderer.draw(matrices, "Minecarts", (this.guiX + 8), (this.guiY + 8), 4210752);
+        textRenderer.draw(matrices, "Inventory", (this.guiX + 8), (this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 )), 4210752);
     }
 
     private void drawSearchBox(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -148,48 +157,33 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < 36; i++) {
             ItemStack inventoryItem = playerItems.get(i);
             int slotX = this.guiX + 8 + 18*(i % 9);
-            int slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            int slotY;
+            if (i < 27)
+                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            else
+                slotY = this.guiY + rowCount * 18 + 94;
+            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
             itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
             itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() == 1 ? "" : Integer.toString(inventoryItem.getCount()));
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
-                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
-                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
-                }
+                hoveredSlot = i;
             }
         }
-        for (int i = 27; i < 36; i++) {
-            ItemStack inventoryItem = playerItems.get(i);
-            int slotX = this.guiX + 8 + 18*(i%9);
-            int slotY = this.guiY + rowCount * 18 + 94;
-            itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
-            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() == 1 ? "" : Integer.toString(inventoryItem.getCount()));
-            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
-                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
-                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
-                }
-            }
-        }
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < 36; i++) {
             ItemStack inventoryItem = playerItems.get(i);
             int slotX = this.guiX + 8 + 18*(i % 9);
-            int slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            int slotY;
+            if (i < 27)
+                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            else
+                slotY = this.guiY + rowCount * 18 + 94;
+            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
-                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
-                }
-            }
-        }
-        for (int i = 27; i < 36; i++) {
-            ItemStack inventoryItem = playerItems.get(i);
-            int slotX = this.guiX + 8 + 18*(i%9);
-            int slotY = this.guiY + rowCount * 18 + 94;
-            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
                     renderTooltip(matrices, inventoryItem, mouseX, mouseY);
                 }
             }
@@ -221,7 +215,7 @@ public class CondensedItemScreen extends Screen {
             if ((i + rowsScrolled*9) < items.size()) {
                 ItemStack inventoryItem = items.get(i + rowsScrolled * 9).visualItemStack;
                 if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
-                    if (pickStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                    if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
                         renderTooltip(matrices, inventoryItem, mouseX, mouseY);
                     }
                 }
@@ -235,8 +229,8 @@ public class CondensedItemScreen extends Screen {
 
     private void drawPickStack(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         this.itemRenderer.zOffset = 200.0F;
-        itemRenderer.renderInGuiWithOverrides(pickStack, (mouseX - 8), (mouseY - 8));
-        itemRenderer.renderGuiItemOverlay(this.textRenderer, pickStack, (mouseX - 8), (mouseY - 8), pickStack.getCount() == 1 ? "" : Integer.toString(pickStack.getCount()));
+        itemRenderer.renderInGuiWithOverrides(mouseStack, (mouseX - 8), (mouseY - 8));
+        itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, (mouseX - 8), (mouseY - 8), mouseStack.getCount() == 1 ? "" : Integer.toString(mouseStack.getCount()));
         this.itemRenderer.zOffset = 0.0F;
     }
 
@@ -276,7 +270,7 @@ public class CondensedItemScreen extends Screen {
         scrolling = false;
         mouseDragged(mouseX, mouseY, button, 0, 0);
         checkButtons(mouseX, mouseY);
-//        checkItems()
+        checkItems(mouseX, mouseY);
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
@@ -308,10 +302,28 @@ public class CondensedItemScreen extends Screen {
                                 items.sort(quantityComparator);
                             }
                         }
-                        case 3 -> // crafting table
-                            showCraftingTable = !showCraftingTable;
+                        case 3 -> { // crafting table
+                                showCraftingTable = !showCraftingTable;
+                                init();
+                            }
                     }
                 }
+            }
+        }
+    }
+
+    public void checkItems(double mouseX, double mouseY) {
+        if (mouseStack.equals(ItemStack.EMPTY)) {
+            mouseStack = playerItems.get(hoveredSlot);
+            playerItems.set(hoveredSlot, ItemStack.EMPTY);
+        } else {
+            if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+                playerItems.set(hoveredSlot, mouseStack);
+                mouseStack = ItemStack.EMPTY;
+            } else {
+                ItemStack inbetweenie = mouseStack.copy();
+                mouseStack = playerItems.get(hoveredSlot);
+                playerItems.set(hoveredSlot, inbetweenie);
             }
         }
     }
@@ -319,12 +331,30 @@ public class CondensedItemScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        rowCount = (this.height - 220) / 18 + 3;
-        this.guiY = (this.height - this.backgroundHeight - (rowCount - 3) * 18) / 2;
-        this.guiX = (this.width - this.backgroundWidth - 17) / 2;
+
+        craftingTableLocation = null;
+        for (int i = -5; i < 5; i++) {
+            for (int j = -5; j < 5; j++) {
+                for (int k = -5; k < 5; k++) {
+                    if (client.player.getWorld().getBlockState(client.player.getBlockPos().add(i, j, k)).getBlock() instanceof CraftingTableBlock) {
+                        craftingTableLocation = client.player.getBlockPos().add(i, j, k);
+                        System.out.println("Found Crafting Table");
+                        break;
+                    }
+                }
+                if (craftingTableLocation != null) break;
+            }
+            if (craftingTableLocation != null) break;
+        }
+
+        rowCount = (this.height - 220 - (craftingTableLocation != null || showCraftingTable ? 20 : 0)) / 18 + 3;
+        this.guiY = (this.height - (craftingTableLocation == null || !showCraftingTable ? this.backgroundHeight - 56 : this.backgroundHeight) - (rowCount - 3) * 18) / 2;
+        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
+
         for (int i = 0; i < 36; i++) {
             playerItems.add(ItemStack.EMPTY);
         }
+
         client.keyboard.setRepeatEvents(true);
         TextRenderer textRenderer = this.textRenderer;
         this.searchBox = new TextFieldWidget(textRenderer, this.guiX + 82, this.guiY + 7, 80, 9, new TranslatableText("itemGroup.search"));
