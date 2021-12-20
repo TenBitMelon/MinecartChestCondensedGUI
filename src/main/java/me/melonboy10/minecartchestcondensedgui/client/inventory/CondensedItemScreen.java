@@ -138,9 +138,23 @@ public class CondensedItemScreen extends Screen {
 //                            sortMinecarts();
                         }
                         case 1 -> // sort direction
-                            sortDirection = sortDirection.other();
+                                {
+                                    sortDirection = sortDirection.other();
+                                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                        Collections.sort(items, nameComparator);
+                                    } else {
+                                        Collections.sort(items, quantityComparator);
+                                    }
+                                }
                         case 2 -> // sort filter
-                            sortFilter = sortFilter.other();
+                                {
+                                    sortFilter = sortFilter.other();
+                                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                        Collections.sort(items, nameComparator);
+                                    } else {
+                                        Collections.sort(items, quantityComparator);
+                                    }
+                                }
                         case 3 -> // crafting table
                             showCraftingTable = !showCraftingTable;
                     }
