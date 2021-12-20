@@ -18,22 +18,19 @@ public class MinecartManager {
 
     static MinecraftClient client = MinecraftClient.getInstance();
 
-    static HashMap<ItemStack, ChestMinecartEntity> itemsToMinecart = new HashMap<>();
     static ArrayList<ChestMinecartEntity> minecartEntities;
     public static int currentSyncID;
 
     public static boolean running = false;
-    static int index = 0;
+    static int index = -1;
 
     static CondensedItemScreen gui;
 
     public static void indexContents(List<ItemStack> contents) {
-        System.out.println("Indexing");
         if (running) {
             for (int i = 0; i < contents.size() && i < 27; i++) {
                 ItemStack itemStack = contents.get(i);
                 if (itemStack != null && !itemStack.equals(ItemStack.EMPTY)) {
-                    itemsToMinecart.put(itemStack, minecartEntities.get(index));
                     gui.addItems(minecartEntities.get(index), itemStack, i);
                 }
             }
@@ -49,40 +46,29 @@ public class MinecartManager {
     }
 
     private static boolean checkFinished() {
-        System.out.println("checking fin");
         if (index >= minecartEntities.size() - 1) {
             end();
-            System.out.println("ending");
             return true;
         }
         return false;
     }
 
     public static void pickMinecart() {
-        System.out.println("Picking Cart");
         if (running) {
             if (!minecartEntities.isEmpty()) {
+                index++;
                 ChestMinecartEntity minecartEntity = minecartEntities.get(index);
                 assert MinecraftClient.getInstance().interactionManager != null;
                 MinecraftClient.getInstance().interactionManager.interactEntity(client.player, minecartEntity, Hand.MAIN_HAND);
-                System.out.println("Clicked");
-                index++;
             }
         }
     }
 
     public static void start() {
-        if (!running) {
-            running = true;
-            itemsToMinecart.clear();
-            currentSyncID = 0;
-            index = 0;
-            if (minecartEntities.isEmpty()) {
-                end();
-            } else {
+        if (!minecartEntities.isEmpty()) {
+            if (!running) {
+                running = true;
                 pickMinecart();
-                System.out.println("Start");
-                System.out.println(minecartEntities);
             }
         }
 
@@ -94,6 +80,8 @@ public class MinecartManager {
 
     public static void end() {
         running = false;
+        currentSyncID = 0;
+        index = -1;
 //        MinecraftClient.getInstance().setScreen(new CottonClientScreen(new InventoryGUI(itemsToMinecart)));
     }
 }

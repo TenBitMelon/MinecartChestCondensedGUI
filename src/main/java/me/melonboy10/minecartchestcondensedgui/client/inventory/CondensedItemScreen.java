@@ -132,6 +132,11 @@ public class CondensedItemScreen extends Screen {
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        mouseDragged(mouseX, mouseY, button, 0, 0);
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
     private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         for (int i = 0; i < 27; i++) {
             ItemStack inventoryItem = playerItems.get(i);
