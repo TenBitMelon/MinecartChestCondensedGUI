@@ -5,7 +5,8 @@
   "name": "MinecartChestCondensedGUI",
   "description": "",
   "authors": [
-    "melonboy10"
+    "melonboy10",
+    "Enderlord0042"
   ],
   "contact": {},
   "license": "MIT",
@@ -20,7 +21,7 @@
     ]
   },
   "mixins": [
-    "minecartchestcondensedgui.json"
+    "minecartchestcondensedgui.mixin.json"
   ],
   "depends": {
     "fabricloader": ">=0.12.5",
