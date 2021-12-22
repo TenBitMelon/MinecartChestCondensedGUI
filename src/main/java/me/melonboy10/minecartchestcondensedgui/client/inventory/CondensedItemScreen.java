@@ -210,7 +210,10 @@ public class CondensedItemScreen extends Screen {
                 } else {
                     amountString = visibleItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(visibleItems.get(i + rowsScrolled*9).amount);
                 }
-                itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, amountString);
+                MatrixStack textMatrixStack = new MatrixStack();
+                textMatrixStack.scale(0.5F, 0.5F, 1);
+                textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
+                textRenderer.drawWithShadow(textMatrixStack, amountString, slotX*2+31-textRenderer.getWidth(amountString), slotY*2+23, -1);
             }
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
