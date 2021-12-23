@@ -8,6 +8,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.*;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.inventory.SimpleInventory;
@@ -19,6 +20,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
@@ -51,6 +53,7 @@ public class CondensedItemScreen extends Screen {
                 return QUANTITY;
         }
     }
+
     private static SortDirection sortDirection = SortDirection.DESCENDING;
     private static SortFilter sortFilter = SortFilter.QUANTITY;
     private static boolean showCraftingTable = true;
@@ -67,11 +70,18 @@ public class CondensedItemScreen extends Screen {
     private TextFieldWidget searchBox;
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
+    private long lastButtonClickTime;
+    private int lastClickedSlot;
+    private HoveredInventory lastClickedInventory;
+    private int lastClickedButton;
+
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<VirtualItemStack> visibleItems = new ArrayList<>();
     public List<ItemStack> playerItems = new ArrayList<>();
+
+    enum HoveredInventory {MINECARTS, PLAYER}
+    private HoveredInventory hoveredInventory;
     private int hoveredSlot;
-    private ItemStack touchDragStack = ItemStack.EMPTY;
     private ItemStack mouseStack = ItemStack.EMPTY;
     private boolean itemFromMinecarts = false;
 
@@ -98,8 +108,6 @@ public class CondensedItemScreen extends Screen {
         RenderSystem.setShaderTexture(0, GRID);
 
         int numberOfAddedRows = rowCount - 3;
-//        this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
-//        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
 
         this.drawTexture(matrices, this.guiX, this.guiY, 0, 0, this.backgroundWidth, this.backgroundHeight - 150); // Top
         for (int i = 0; i < numberOfAddedRows; i++) {
@@ -178,6 +186,7 @@ public class CondensedItemScreen extends Screen {
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
+                hoveredInventory = HoveredInventory.PLAYER;
             }
         }
         for (int i = 0; i < 36; i++) {
@@ -218,6 +227,7 @@ public class CondensedItemScreen extends Screen {
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
+                hoveredInventory = HoveredInventory.MINECARTS;
             }
         }
         for (int i = 0; i < rowCount * 9; i++) {
@@ -279,11 +289,25 @@ public class CondensedItemScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         scrolling = false;
+        boolean isDoubleClicking = checkForDoubleClick(button);
         mouseDragged(mouseX, mouseY, button, 0, 0);
         checkButtons(mouseX, mouseY);
-        checkItems(mouseX, mouseY, button);
+        checkItems(mouseX, mouseY, button, isDoubleClicking);
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private boolean checkForDoubleClick(int button) {
+        long currentTime = Util.getMeasuringTimeMs();
+        boolean isDoubleClicking = (hoveredSlot == lastClickedSlot && hoveredInventory == lastClickedInventory && lastClickedButton == button && currentTime - lastButtonClickTime < 250L);
+        if (isDoubleClicking) {
+            System.out.println("CONGRATULATIONS! YOU JUST DOUBLE CLICKED!");
+        }
+        lastClickedSlot = hoveredSlot;
+        lastClickedInventory = hoveredInventory;
+        lastClickedButton = button;
+        lastButtonClickTime = currentTime;
+        return isDoubleClicking;
     }
 
     public void checkButtons(double mouseX, double mouseY) {
@@ -325,7 +349,7 @@ public class CondensedItemScreen extends Screen {
         }
     }
 
-    public void checkItems(double mouseX, double mouseY, int button) {
+    public void checkItems(double mouseX, double mouseY, int button, boolean isDoubleClicking) {
 
         int y = (this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ));
         if (isMouseOver(mouseX, mouseY, this.guiX, y, this.guiX + 176, y + 88)) { // Handle Player Inventory
@@ -349,16 +373,37 @@ public class CondensedItemScreen extends Screen {
                     }
                 }
             } else {
-                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
-                    playerItems.set(hoveredSlot, mouseStack);
-                    mouseStack = ItemStack.EMPTY;
+                if (isDoubleClicking && mouseStack.isStackable()) {
+                    int playerStackRoom = mouseStack.getMaxCount() - mouseStack.getCount();
+                    for (int i = 0; i < 36; i++) {
+                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(i))) {
+                            int currentItemStackAmount = playerItems.get(i).getCount();
+                            if (playerStackRoom >= currentItemStackAmount) {
+                                playerItems.set(i, ItemStack.EMPTY);
+                                mouseStack.increment(currentItemStackAmount);
+                                playerStackRoom -= currentItemStackAmount;
+                            } else {
+                                playerItems.get(i).decrement(playerStackRoom);
+                                mouseStack.increment(currentItemStackAmount);
+                                playerStackRoom -= currentItemStackAmount;
+                            }
+                            if (playerStackRoom < 1) {
+                                break;
+                            }
+                        }
+                    }
                 } else {
-                    if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(hoveredSlot))) {
-
+                    if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+                        playerItems.set(hoveredSlot, mouseStack);
+                        mouseStack = ItemStack.EMPTY;
                     } else {
-                        ItemStack inbetweenie = mouseStack.copy();
-                        mouseStack = playerItems.get(hoveredSlot);
-                        playerItems.set(hoveredSlot, inbetweenie);
+                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(hoveredSlot))) {
+
+                        } else {
+                            ItemStack inbetweenie = mouseStack.copy();
+                            mouseStack = playerItems.get(hoveredSlot);
+                            playerItems.set(hoveredSlot, inbetweenie);
+                        }
                     }
                 }
             }
