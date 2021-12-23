@@ -1,581 +1,697 @@
-package me.melonboy10.minecartchestcondensedgui.client.inventory;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.datafixers.util.Pair;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.block.CraftingTableBlock;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryListener;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.HotbarStorage;
-import net.minecraft.client.option.HotbarStorageEntry;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.search.SearchManager;
-import net.minecraft.client.search.SearchableContainer;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.tag.ItemTags;
-import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagGroup;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.registry.Registry;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
-
-import java.util.*;
-import java.util.function.Predicate;
-
-@Environment(EnvType.CLIENT)
-public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHandler> {
-
-    private static final Identifier TEXTURE = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
-    static final SimpleInventory INVENTORY = new SimpleInventory(45);
-
-    private float scrollPosition;
-    private boolean scrolling;
-    private TextFieldWidget searchBox;
-    private static boolean showCraftingTable = true;
-    private BlockPos craftingTableLocation;
-    private int rowCount;
-
-    private List<Slot> slots;
-    private boolean ignoreTypedCharacter;
-    private boolean lastClickOutsideBounds;
-    private final Map<Identifier, Tag<Item>> searchResultTags = Maps.newTreeMap();
-
-    public ScreenTest() {
-        super(new ScreenTest.ScreenTestHandler(), MinecraftClient.getInstance().player.getInventory(), LiteralText.EMPTY);
-        client = MinecraftClient.getInstance();
-        client.player.currentScreenHandler = this.handler;
-        this.passEvents = true;
-        this.backgroundHeight = 229;
-        this.backgroundWidth = 195;
-    }
-
-    protected void init() {
-        super.init();
-
-        craftingTableLocation = null;
-        for (int i = -5; i < 5; i++) {
-            for (int j = -5; j < 5; j++) {
-                for (int k = -5; k < 5; k++) {
-                    if (client.player.getWorld().getBlockState(client.player.getBlockPos().add(i, j, k)).getBlock() instanceof CraftingTableBlock) {
-                        craftingTableLocation = client.player.getBlockPos().add(i, j, k);
-                        System.out.println("Found Crafting Table");
-                        break;
-                    }
-                }
-                if (craftingTableLocation != null) break;
-            }
-            if (craftingTableLocation != null) break;
-        }
-
-        rowCount = (this.height - 220 - (craftingTableLocation != null || showCraftingTable ? 20 : 0)) / 18 + 3;
-//        this.x = (this.height - (craftingTableLocation == null || !showCraftingTable ? this.backgroundHeight - 56 : this.backgroundHeight) - (rowCount - 3) * 18) / 2;
-//        this.y = (this.width - this.backgroundWidth + 17) / 2;
-
-        this.client.keyboard.setRepeatEvents(true);
-        TextRenderer var10003 = this.textRenderer;
-        int var10004 = this.x + 82;
-        int var10005 = this.y + 6;
-        Objects.requireNonNull(this.textRenderer);
-        this.searchBox = new TextFieldWidget(var10003, var10004, var10005, 80, 9, new TranslatableText("itemGroup.search"));
-        this.searchBox.setMaxLength(50);
-        this.searchBox.setDrawsBackground(false);
-        this.searchBox.setVisible(false);
-        this.searchBox.setEditableColor(16777215);
-        this.addSelectableChild(this.searchBox);
-    }
-
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        this.renderBackground(matrices);
-        super.render(matrices, mouseX, mouseY, delta);
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        this.drawMouseoverTooltip(matrices, mouseX, mouseY);
-    }
-
-    protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-//        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-
-
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-
-        int numberOfAddedRows = rowCount - 3;
-//        this.guiY = (this.height - this.backgroundHeight - numberOfAddedRows * 18) / 2;
+//package me.melonboy10.minecartchestcondensedgui.client.inventory;
+//
+//import com.mojang.blaze3d.systems.RenderSystem;
+//import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
+//import net.minecraft.block.CraftingTableBlock;
+//import net.minecraft.client.MinecraftClient;
+//import net.minecraft.client.font.TextRenderer;
+//import net.minecraft.client.gui.screen.Screen;
+//import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
+//import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
+//import net.minecraft.client.gui.widget.TextFieldWidget;
+//import net.minecraft.client.render.*;
+//import net.minecraft.client.util.InputUtil;
+//import net.minecraft.client.util.math.MatrixStack;
+//import net.minecraft.entity.player.PlayerEntity;
+//import net.minecraft.entity.player.PlayerInventory;
+//import net.minecraft.entity.vehicle.ChestMinecartEntity;
+//import net.minecraft.inventory.SimpleInventory;
+//import net.minecraft.item.ItemStack;
+//import net.minecraft.item.Items;
+//import net.minecraft.screen.ScreenHandler;
+//import net.minecraft.screen.slot.Slot;
+//import net.minecraft.screen.slot.SlotActionType;
+//import net.minecraft.text.LiteralText;
+//import net.minecraft.text.TranslatableText;
+//import net.minecraft.util.Identifier;
+//import net.minecraft.util.Util;
+//import net.minecraft.util.collection.DefaultedList;
+//import net.minecraft.util.math.BlockPos;
+//import net.minecraft.util.math.MathHelper;
+//import org.lwjgl.glfw.GLFW;
+//
+//import java.util.*;
+//import java.util.List;
+//import java.util.stream.Collectors;
+//
+//public class ScreenTest extends AbstractInventoryScreen<ScreenTest.ScreenTestHandler> {
+//    private static final Identifier GRID = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
+//
+//    private final int backgroundHeight = 229;
+//    private final int backgroundWidth = 193;
+//
+//    enum SortDirection {ASCENDING, DESCENDING;
+//
+//        public SortDirection other() {
+//            if (this.equals(ASCENDING))
+//                return DESCENDING;
+//            else
+//                return ASCENDING;
+//        }
+//    }
+//    enum SortFilter {QUANTITY, ALPHABETICALLY;
+//
+//        public SortFilter other() {
+//            if (this.equals(QUANTITY))
+//                return ALPHABETICALLY;
+//            else
+//                return QUANTITY;
+//        }
+//    }
+//
+//    private static SortDirection sortDirection = SortDirection.DESCENDING;
+//    private static SortFilter sortFilter = SortFilter.QUANTITY;
+//    private static boolean showCraftingTable = true;
+//    private BlockPos craftingTableLocation;
+//
+//    private int guiX;
+//    private int guiY;
+//
+//    private int rowCount;
+//
+//    private float scrollPosition;
+//    private int rowsScrolled;
+//    private boolean scrolling = false;
+//    private TextFieldWidget searchBox;
+//    private static final MinecraftClient client = MinecraftClient.getInstance();
+//
+//    private long lastButtonClickTime;
+//    private int lastClickedSlot;
+//    private HoveredInventory lastClickedInventory;
+//    private int lastClickedButton;
+//
+//    protected static SimpleInventory inventory = new SimpleInventory(27);
+//
+//    enum HoveredInventory {MINECARTS, PLAYER}
+//    private HoveredInventory hoveredInventory;
+//    private int hoveredSlot;
+//    private ItemStack mouseStack = ItemStack.EMPTY;
+//    private boolean itemFromMinecarts = false;
+//
+//    public ScreenTest() {
+//        super(new ScreenTestHandler(), client.player.getInventory(), new LiteralText("Condensed Minecarts"));
+//    }
+//
+//    @Override
+//    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+//        renderBackground(matrices);
+//        drawGrid(matrices, delta, mouseX, mouseY);
+//        drawButtons(matrices, delta, mouseX, mouseY);
+//        drawLabels(matrices, delta, mouseX, mouseY);
+//        drawSearchBox(matrices, delta, mouseX, mouseY);
+//        drawScrollBar(matrices, delta, mouseX, mouseY);
+//        drawPlayerInventory(matrices, delta, mouseX, mouseY);
+//        drawMinecartItems(matrices, delta, mouseX, mouseY);
+//        drawTouchDragStack(matrices, delta, mouseX, mouseY);
+//        drawPickStack(matrices, delta, mouseX, mouseY);
+//    }
+//
+//    @Override
+//    protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {}
+//
+//    private void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+//        RenderSystem.setShaderTexture(0, GRID);
+//
+//        int numberOfAddedRows = rowCount - 3;
+//
+//        this.drawTexture(matrices, this.guiX, this.guiY, 0, 0, this.backgroundWidth, this.backgroundHeight - 150); // Top
+//        for (int i = 0; i < numberOfAddedRows; i++) {
+//            this.drawTexture(matrices, this.guiX, this.guiY + 72 + (18 * i), 0, 54, 193, 25); // Row Segment
+//        }
+//        if (showCraftingTable && craftingTableLocation != null) {
+//            // Crafting Table Segment
+//            this.drawTexture(matrices, this.guiX, this.guiY + 78 + numberOfAddedRows * 18, 0, 79, this.backgroundWidth, this.backgroundHeight - 79); // Bottom
+//        } else {
+//            this.drawTexture(matrices, this.guiX, this.guiY + 78 + numberOfAddedRows * 18, 0, 135, this.backgroundWidth, this.backgroundHeight - 135); // Bottom
+//        }
+//    }
+//
+//    public void drawButtons(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        for (int i = 0, j = 0; j < 4; i++, j++) {
+//            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+//            RenderSystem.setShaderTexture(0, GRID);
+//
+//            int x = guiX - 18;
+//            int y = guiY + 8 + (j * 18);
+//
+//            switch (i) {
+//                case 1 -> { if (sortDirection.equals(SortDirection.ASCENDING)) i++; }
+//                case 3 -> { if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++; }
+//                case 5 -> { if (!showCraftingTable) i++; }
+//            }
+//            if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
+//                this.drawTexture(matrices, x, y, 213, i * 16, 16, 16);
+//                renderTooltip(matrices, new LiteralText(switch (j) {
+//                    case 0 -> "Sort Nearby Minecarts"; // Sort Carts
+//                    case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
+//                    case 2 -> sortFilter.equals(SortFilter.QUANTITY) ? "Sorting Quantity" : "Sorting Alphabetically"; // Sort Filter
+//                    case 3 -> showCraftingTable ? "Showing Crafting Table" : "Hiding Crafting Table"; // Crafting table
+//                    default -> throw new IllegalStateException("Unexpected value: " + j);
+//                }), mouseX, mouseY);
+//            } else {
+//                this.drawTexture(matrices, x, y, 197, i * 16, 16, 16);
+//            }
+//            if (i == 1 || i == 3 || i == 5) i++;
+//        }
+//    }
+//
+//    private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        textRenderer.draw(matrices, "Minecarts", this.guiX + 8, this.guiY + 8, 4210752);
+//        textRenderer.draw(matrices, "Inventory", this.guiX + 8, this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ), 4210752);
+//    }
+//
+//    private void drawSearchBox(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        searchBox.render(matrices, mouseX, mouseY, delta);
+//    }
+//
+//    private void drawScrollBar(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        int scrollBarX = this.guiX + 174;
+//        int scrollBarY = this.guiY + 20 + (int) ((float)((rowCount * 18) - 17) * this.scrollPosition);
+//        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+//        RenderSystem.setShaderTexture(0, GRID);
+//        if (rowCount >= Math.ceil(inventory.size()/9F)) {
+//            this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
+//        } else {
+//            this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
+//        }
+//    }
+//
+//    private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        for (int i = 0; i < 36; i++) {
+//            ItemStack inventoryItem = client.player.getInventory().getStack(i);
+//            int slotX = this.guiX + 8 + 18*(i % 9);
+//            int slotY;
+//            if (i < 27)
+//                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+//            else
+//                slotY = this.guiY + rowCount * 18 + 94;
+//            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
+//            itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
+//            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() == 1 ? "" : Integer.toString(inventoryItem.getCount()));
+//            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
+//                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
+//                hoveredSlot = i;
+//                hoveredInventory = HoveredInventory.PLAYER;
+//            }
+//        }
+//        for (int i = 0; i < 36; i++) {
+//            ItemStack inventoryItem = client.player.getInventory().getStack(i);
+//            int slotX = this.guiX + 8 + 18*(i % 9);
+//            int slotY;
+//            if (i < 27)
+//                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+//            else
+//                slotY = this.guiY + rowCount * 18 + 94;
+//            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
+//            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
+//                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+//                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+//                }
+//            }
+//        }
+//    }
+//
+//    private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        for (int i = 0; i < rowCount * 9; i++) {
+//            int slotX = this.guiX + 8 + 18 * (i % 9);
+//            int slotY = this.guiY + 20 + 18 * (i / 9);
+//            if ((i + rowsScrolled*9) < inventory.size()) {
+//                ItemStack inventoryItem = inventory.getStack(i + rowsScrolled*9).visualItemStack;
+//                itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
+//                String amountString;
+//                if (visibleItems.get(i + rowsScrolled*9).amount > 999) {
+//                    amountString = Float.toString((float)Math.round(((float)(visibleItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
+//                } else {
+//                    amountString = visibleItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(visibleItems.get(i + rowsScrolled*9).amount);
+//                }
+//                MatrixStack textMatrixStack = new MatrixStack();
+//                textMatrixStack.scale(0.5F, 0.5F, 1);
+//                textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
+//                textRenderer.drawWithShadow(textMatrixStack, amountString, slotX*2+31-textRenderer.getWidth(amountString), slotY*2+23, -1);
+//            }
+//            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
+//                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
+//                hoveredSlot = i;
+//                hoveredInventory = HoveredInventory.MINECARTS;
+//            }
+//        }
+//        for (int i = 0; i < rowCount * 9; i++) {
+//            int slotX = this.guiX + 8 + 18 * (i % 9);
+//            int slotY = this.guiY + 20 + 18 * (i / 9);
+//            if ((i + rowsScrolled*9) < visibleItems.size()) {
+//                ItemStack inventoryItem = visibleItems.get(i + rowsScrolled * 9).visualItemStack;
+//                if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
+//                    if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+//                        renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    private void drawTouchDragStack(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//
+//    }
+//
+//    private void drawPickStack(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+//        this.itemRenderer.zOffset = 200.0F;
+//        itemRenderer.renderInGuiWithOverrides(mouseStack, (mouseX - 8), (mouseY - 8));
+//        itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, (mouseX - 8), (mouseY - 8), mouseStack.getCount() == 1 ? "" : Integer.toString(mouseStack.getCount()));
+//        this.itemRenderer.zOffset = 0.0F;
+//    }
+//
+//    private boolean isMouseOver(double mouseX, double mouseY, int x1, int y1, int x2, int y2) {
+//        return mouseX >= (double)x1 && mouseY >= (double)y1 && mouseX < (double)x2 && mouseY < (double)y2;
+//    }
+//
+//    @Override
+//    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+//        if (isMouseOver(mouseX, mouseY, this.guiX + 174, this.guiY + 20, this.guiX + 186, this.guiY + 18 + rowCount * 18) &&
+//            rowCount < Math.ceil(visibleItems.size()/9F) || scrolling) {
+//            int y1 = this.guiY + 20;
+//            int y2 = y1 + (rowCount) * 18;
+//
+//            this.scrollPosition = ((float)mouseY - (float)y1 - 7.5F) / ((float)(y2 - y1) - 15F);
+//            this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+//
+//            rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(visibleItems.size()/9F) - rowCount));
+//            scrolling = true;
+//            return true;
+//        }
+//        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+//    }
+//
+//    @Override
+//    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+//        if (rowCount < Math.ceil(visibleItems.size()/9F)) {
+//            scrollPosition -= (float) amount / ((float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+//            scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
+//            rowsScrolled = Math.round(scrollPosition * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+//        }
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+//        scrolling = false;
+//        boolean isDoubleClicking = checkForDoubleClick(button);
+//        mouseDragged(mouseX, mouseY, button, 0, 0);
+//        checkButtons(mouseX, mouseY);
+//        checkItems(mouseX, mouseY, button, isDoubleClicking);
+//
+//        return super.mouseClicked(mouseX, mouseY, button);
+//    }
+//
+//    private boolean checkForDoubleClick(int button) {
+//        long currentTime = Util.getMeasuringTimeMs();
+//        boolean isDoubleClicking = (hoveredSlot == lastClickedSlot && hoveredInventory == lastClickedInventory && lastClickedButton == button && currentTime - lastButtonClickTime < 250L);
+//        if (isDoubleClicking) {
+//            System.out.println("CONGRATULATIONS! YOU JUST DOUBLE CLICKED!");
+//        }
+//        lastClickedSlot = hoveredSlot;
+//        lastClickedInventory = hoveredInventory;
+//        lastClickedButton = button;
+//        lastButtonClickTime = currentTime;
+//        return isDoubleClicking;
+//    }
+//
+//    public void checkButtons(double mouseX, double mouseY) {
+//        if (isMouseOver(mouseX, mouseY, guiX - 18, guiY + 8, guiX + 2, guiY + 80)) {
+//            for (int i = 0; i < 4; i++) {
+//                int x = guiX - 18;
+//                int y = guiY + 8 + (i * 18);
+//
+//                if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (i * 18))) {
+//                    switch (i) {
+//                        case 0 -> { // sort minecarts
+////                            sortMinecarts();
+//                        }
+//                        case 1 -> { // sort direction
+//                            sortDirection = sortDirection.other();
+//                            if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                                handler.items.sort(nameComparator);
+//                            } else {
+//                                handler.items.sort(quantityComparator);
+//                            }
+//                            search();
+//                        }
+//                        case 2 -> { // sort filter
+//                            sortFilter = sortFilter.other();
+//                            if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                                handler.items.sort(nameComparator);
+//                            } else {
+//                                handler.items.sort(quantityComparator);
+//                            }
+//                            search();
+//                        }
+//                        case 3 -> { // crafting table
+//                            showCraftingTable = !showCraftingTable;
+//                            init();
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    public void checkItems(double mouseX, double mouseY, int button, boolean isDoubleClicking) {
+//
+//        int y = (this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ));
+//        if (isMouseOver(mouseX, mouseY, this.guiX, y, this.guiX + 176, y + 88)) { // Handle Player Inventory
+//
+//            if (mouseStack.equals(ItemStack.EMPTY)) { //pick up the item there
+//                if (hasShiftDown()) {
+//
+//                } else {
+//                    switch (button) {
+//                        case 0 -> { // left click
+//                            mouseStack = playerItems.get(hoveredSlot);
+//                            playerItems.set(hoveredSlot, ItemStack.EMPTY);
+//                        }
+//                        case 1 -> { // right click
+//                            mouseStack = playerItems.get(hoveredSlot).copy();
+//                            mouseStack.setCount((int) Math.ceil(mouseStack.getCount() / 2.0));
+//                            ItemStack swapItem = playerItems.get(hoveredSlot).copy();
+//                            swapItem.setCount((int) Math.floor(swapItem.getCount() / 2.0));
+//                            playerItems.set(hoveredSlot, swapItem);
+//                        }
+//                    }
+//                }
+//            } else {
+//                if (isDoubleClicking && mouseStack.isStackable()) {
+//                    int playerStackRoom = mouseStack.getMaxCount() - mouseStack.getCount();
+//                    for (int i = 0; i < 36; i++) {
+//                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(i))) {
+//                            int currentItemStackAmount = playerItems.get(i).getCount();
+//                            if (playerStackRoom >= currentItemStackAmount) {
+//                                playerItems.set(i, ItemStack.EMPTY);
+//                                mouseStack.increment(currentItemStackAmount);
+//                                playerStackRoom -= currentItemStackAmount;
+//                            } else {
+//                                playerItems.get(i).decrement(playerStackRoom);
+//                                mouseStack.increment(currentItemStackAmount);
+//                                playerStackRoom -= currentItemStackAmount;
+//                            }
+//                            if (playerStackRoom < 1) {
+//                                break;
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+//                        playerItems.set(hoveredSlot, mouseStack);
+//                        mouseStack = ItemStack.EMPTY;
+//                    } else {
+//                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(hoveredSlot))) {
+//
+//                        } else {
+//                            ItemStack inbetweenie = mouseStack.copy();
+//                            mouseStack = playerItems.get(hoveredSlot);
+//                            playerItems.set(hoveredSlot, inbetweenie);
+//                        }
+//                    }
+//                }
+//            }
+//            /*
+//
+//                            } else {
+//                                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+//                                    playerItems.set(hoveredSlot, mouseStack);
+//                                    mouseStack = ItemStack.EMPTY;
+//                                } else {
+//                                    ItemStack inbetweenie = mouseStack.copy();
+//                                    mouseStack = playerItems.get(hoveredSlot);
+//                                    playerItems.set(hoveredSlot, inbetweenie);
+//                                }
+//
+//
+//                                 else {
+//                                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+//                                    playerItems.set(hoveredSlot, mouseStack);
+//                                    mouseStack = ItemStack.EMPTY;
+//                                } else {
+//                                    ItemStack inbetweenie = mouseStack.copy();
+//                                    mouseStack = playerItems.get(hoveredSlot);
+//                                    playerItems.set(hoveredSlot, inbetweenie);
+//                                }
+//                            }
+//             */
+//        } else if (isMouseOver(mouseX, mouseY, guiX, guiY, guiX + 172, guiY + 24 + rowCount * 18)) { // Handle Minecart Inventory
+//
+//
+////            mouseStack
+////            visibleItems.get(0).moveToInventorySlot(20, 18);
+////            MinecartManager.addTask(new MinecartManager.MoveTask(visibleItems.get(0).containingMinecarts.get(0).minecart, 0, 38, 64));
+//        }
+//        /*
+//        if (mouseStack.equals(ItemStack.EMPTY)) {
+//                mouseStack = playerItems.get(hoveredSlot);
+//                playerItems.set(hoveredSlot, ItemStack.EMPTY);
+//            } else {
+//                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
+//                    playerItems.set(hoveredSlot, mouseStack);
+//                    mouseStack = ItemStack.EMPTY;
+//                } else {
+//                    ItemStack inbetweenie = mouseStack.copy();
+//                    mouseStack = playerItems.get(hoveredSlot);
+//                    playerItems.set(hoveredSlot, inbetweenie);
+//                }
+//            }
+//         */
+//    }
+//
+//    public boolean charTyped(char chr, int modifiers) {
+//        String string = this.searchBox.getText();
+//        if(this.searchBox.charTyped(chr, modifiers)) {
+//            if (!Objects.equals(string, this.searchBox.getText())) {
+//                search();
+//            }
+//            return true;
+//        } else {
+//            return false;
+//        }
+//    }
+//
+//    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+//        String string = this.searchBox.getText();
+//        if(this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
+//            if (!Objects.equals(string, this.searchBox.getText())) {
+//                search();
+//            }
+//            return true;
+//        } else {
+//            return super.keyPressed(keyCode, scanCode, modifiers);
+//        }
+//    }
+//
+//    private void search() {
+//        visibleItems.clear();
+//        for (VirtualItemStack testedStack : handler.items) {
+//            if (searchBox.getText() == "") {
+//                visibleItems.add(testedStack.copy());
+//            } else if (Character.toString( searchBox.getText().charAt(0)) == "@") {
+//                visibleItems.add(testedStack.copy());
+//            } else {
+//                if (testedStack.visualItemStack.getName().getString().toLowerCase().matches(".*\\Q" + searchBox.getText().toLowerCase() + "\\E.*")) {
+//                    visibleItems.add(testedStack.copy());
+//                }
+//            }
+//        }
+//    }
+//
+//    @Override
+//    protected void init() {
+//        super.init();
+//
+//        craftingTableLocation = null;
+//        for (int i = -5; i < 5; i++) {
+//            for (int j = -5; j < 5; j++) {
+//                for (int k = -5; k < 5; k++) {
+//                    if (client.player.getWorld().getBlockState(client.player.getBlockPos().add(i, j, k)).getBlock() instanceof CraftingTableBlock) {
+//                        craftingTableLocation = client.player.getBlockPos().add(i, j, k);
+//                        System.out.println("Found Crafting Table");
+//                        break;
+//                    }
+//                }
+//                if (craftingTableLocation != null) break;
+//            }
+//            if (craftingTableLocation != null) break;
+//        }
+//
+//        rowCount = (this.height - 220 - (craftingTableLocation != null || showCraftingTable ? 20 : 0)) / 18 + 3;
+//        this.guiY = (this.height - (craftingTableLocation == null || !showCraftingTable ? this.backgroundHeight - 56 : this.backgroundHeight) - (rowCount - 3) * 18) / 2;
 //        this.guiX = (this.width - this.backgroundWidth + 17) / 2;
-        this.fillGradient(matrices, this.x, this.y, this.x + 10, this.y + 10, 16777215, 16777215);
-        this.fillGradient(matrices, 0, 0, 10, 10, 16777215, 16777215);
-        this.drawTexture(matrices, this.x, this.y, 0, 0, this.backgroundWidth, this.backgroundHeight - 150); // Top
-        for (int i = 0; i < numberOfAddedRows; i++) {
-            this.drawTexture(matrices, this.x, this.y + 72 + (18 * i), 0, 54, 193, 25); // Row Segment
-        }
-        if (showCraftingTable && craftingTableLocation != null) {
-            // Crafting Table Segment
-            this.drawTexture(matrices, this.x, this.y + 78 + numberOfAddedRows * 18, 0, 79, this.backgroundWidth, this.backgroundHeight - 79); // Bottom
-        } else {
-            this.drawTexture(matrices, this.x, this.y + 78 + numberOfAddedRows * 18, 0, 135, this.backgroundWidth, this.backgroundHeight - 135); // Bottom
-        }
-
-    }
-
-    protected void renderTooltip(MatrixStack matrices, ItemStack stack, int x, int y) {
-        List<Text> list = stack.getTooltip(this.client.player, this.client.options.advancedItemTooltips ? TooltipContext.Default.ADVANCED : TooltipContext.Default.NORMAL);
-        List<Text> list2 = Lists.newArrayList((Iterable)list);
-
-        this.searchResultTags.forEach((id, tag) -> {
-            if (stack.isIn(tag)) {
-                list2.add(1, (new LiteralText("#" + id)).formatted(Formatting.DARK_PURPLE));
-            }
-        });
-
-        this.renderTooltip(matrices, list2, stack.getTooltipData(), x, y);
-
-    }
-
-    public void resize(MinecraftClient client, int width, int height) {
-        String string = this.searchBox.getText();
-        this.init(client, width, height);
-        this.searchBox.setText(string);
-        if (!this.searchBox.getText().isEmpty()) {
-            this.search();
-        }
-
-    }
-
-    protected void onMouseClick(@Nullable Slot slot, int slotId, int button, SlotActionType actionType) {
-        if (this.isCreativeInventorySlot(slot)) {
-            this.searchBox.setCursorToEnd();
-            this.searchBox.setSelectionEnd(0);
-        }
-
-        boolean bl = actionType == SlotActionType.QUICK_MOVE;
-        actionType = slotId == -999 && actionType == SlotActionType.PICKUP ? SlotActionType.THROW : actionType;
-        ItemStack i;
-        if (slot == null && actionType != SlotActionType.QUICK_CRAFT) {
-            if (!this.handler.getCursorStack().isEmpty() && this.lastClickOutsideBounds) {
-                if (button == 0) {
-                    this.client.player.dropItem(this.handler.getCursorStack(), true);
-                    this.client.interactionManager.dropCreativeStack(this.handler.getCursorStack());
-                    this.handler.setCursorStack(ItemStack.EMPTY);
-                }
-
-                if (button == 1) {
-                    i = this.handler.getCursorStack().split(1);
-                    this.client.player.dropItem(i, true);
-                    this.client.interactionManager.dropCreativeStack(i);
-                }
-            }
-        } else {
-            if (slot != null && !slot.canTakeItems(this.client.player)) {
-                return;
-            }
-
-
-            ItemStack itemStack;
-            if (actionType != SlotActionType.QUICK_CRAFT && slot.inventory == INVENTORY) {
-                i = this.handler.getCursorStack();
-                itemStack = slot.getStack();
-                ItemStack itemStack2;
-                if (actionType == SlotActionType.SWAP) {
-                    if (!itemStack.isEmpty()) {
-                        itemStack2 = itemStack.copy();
-                        itemStack2.setCount(itemStack2.getMaxCount());
-                        this.client.player.getInventory().setStack(button, itemStack2);
-                        this.client.player.playerScreenHandler.sendContentUpdates();
-                    }
-
-                    return;
-                }
-
-                if (actionType == SlotActionType.CLONE) {
-                    if (this.handler.getCursorStack().isEmpty() && slot.hasStack()) {
-                        itemStack2 = slot.getStack().copy();
-                        itemStack2.setCount(itemStack2.getMaxCount());
-                        this.handler.setCursorStack(itemStack2);
-                    }
-
-                    return;
-                }
-
-                if (actionType == SlotActionType.THROW) {
-                    if (!itemStack.isEmpty()) {
-                        itemStack2 = itemStack.copy();
-                        itemStack2.setCount(button == 0 ? 1 : itemStack2.getMaxCount());
-                        this.client.player.dropItem(itemStack2, true);
-                        this.client.interactionManager.dropCreativeStack(itemStack2);
-                    }
-
-                    return;
-                }
-
-                if (!i.isEmpty() && !itemStack.isEmpty() && i.isItemEqualIgnoreDamage(itemStack) && ItemStack.areNbtEqual(i, itemStack)) {
-                    if (button == 0) {
-                        if (bl) {
-                            i.setCount(i.getMaxCount());
-                        } else if (i.getCount() < i.getMaxCount()) {
-                            i.increment(1);
-                        }
-                    } else {
-                        i.decrement(1);
-                    }
-                } else if (!itemStack.isEmpty() && i.isEmpty()) {
-                    this.handler.setCursorStack(itemStack.copy());
-                    i = this.handler.getCursorStack();
-                    if (bl) {
-                        i.setCount(i.getMaxCount());
-                    }
-                } else if (button == 0) {
-                    this.handler.setCursorStack(ItemStack.EMPTY);
-                } else {
-                    this.handler.getCursorStack().decrement(1);
-                }
-            } else if (this.handler != null) {
-                i = slot == null ? ItemStack.EMPTY : this.handler.getSlot(slot.id).getStack();
-                this.handler.onSlotClick(slot == null ? slotId : slot.id, button, actionType, this.client.player);
-                if (ScreenHandler.unpackQuickCraftStage(button) == 2) {
-                    for(int j = 0; j < 9; ++j) {
-                        this.client.interactionManager.clickCreativeStack(this.handler.getSlot(45 + j).getStack(), 36 + j);
-                    }
-                } else if (slot != null) {
-                    itemStack = this.handler.getSlot(slot.id).getStack();
-                    this.client.interactionManager.clickCreativeStack(itemStack, slot.id - this.handler.slots.size() + 9 + 36);
-                    int itemStack2 = 45 + button;
-                    if (actionType == SlotActionType.SWAP) {
-                        this.client.interactionManager.clickCreativeStack(i, itemStack2 - this.handler.slots.size() + 9 + 36);
-                    } else if (actionType == SlotActionType.THROW && !i.isEmpty()) {
-                        ItemStack itemStack3 = i.copy();
-                        itemStack3.setCount(button == 0 ? 1 : itemStack3.getMaxCount());
-                        this.client.player.dropItem(itemStack3, true);
-                        this.client.interactionManager.dropCreativeStack(itemStack3);
-                    }
-
-                    this.client.player.playerScreenHandler.sendContentUpdates();
-                }
-            }
-        }
-    }
-
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            if (this.isClickInScrollbar(mouseX, mouseY)) {
-                this.scrolling = this.hasScrollbar();
-                return true;
-            }
-        }
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            this.scrolling = false;
-        }
-
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        if (!this.hasScrollbar()) {
-            return false;
-        } else {
-            int i = (this.handler.itemList.size() + 9 - 1) / 9 - 5;
-            this.scrollPosition = (float)((double)this.scrollPosition - amount / (double)i);
-            this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
-            this.handler.scrollItems(this.scrollPosition);
-            return true;
-        }
-    }
-
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (this.scrolling) {
-            int i = this.y + 18;
-            int j = i + 112;
-            this.scrollPosition = ((float)mouseY - (float)i - 7.5F) / ((float)(j - i) - 15.0F);
-            this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0F, 1.0F);
-            this.handler.scrollItems(this.scrollPosition);
-            return true;
-        } else {
-            return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
-        }
-    }
-
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        this.ignoreTypedCharacter = false;
-        boolean bl = !this.isCreativeInventorySlot(this.focusedSlot) || this.focusedSlot.hasStack();
-        boolean bl2 = InputUtil.fromKeyCode(keyCode, scanCode).toInt().isPresent();
-        if (bl && bl2 && this.handleHotbarKeyPressed(keyCode, scanCode)) {
-            this.ignoreTypedCharacter = true;
-            return true;
-        } else {
-            String string = this.searchBox.getText();
-            if (this.searchBox.keyPressed(keyCode, scanCode, modifiers)) {
-                if (!Objects.equals(string, this.searchBox.getText())) {
-                    this.search();
-                }
-
-                return true;
-            } else {
-                return this.searchBox.isFocused() && this.searchBox.isVisible() && keyCode != GLFW.GLFW_KEY_ESCAPE || super.keyPressed(keyCode, scanCode, modifiers);
-            }
-        }
-    }
-
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        this.ignoreTypedCharacter = false;
-        return super.keyReleased(keyCode, scanCode, modifiers);
-    }
-
-    public boolean charTyped(char chr, int modifiers) {
-        if (this.ignoreTypedCharacter) {
-            return false;
-        } else {
-            String string = this.searchBox.getText();
-            if (this.searchBox.charTyped(chr, modifiers)) {
-                if (!Objects.equals(string, this.searchBox.getText())) {
-                    this.search();
-                }
-
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    private void search() {
-        this.handler.itemList.clear();
-        String string = this.searchBox.getText();
-        if (string.isEmpty()) {
-
-            for (Item item : Registry.ITEM) {
-                item.appendStacks(ItemGroup.SEARCH, this.handler.itemList);
-            }
-        } else {
-            SearchableContainer<ItemStack> searchable;
-            if (string.startsWith("#")) {
-                string = string.substring(1);
-                searchable = this.client.getSearchableContainer(SearchManager.ITEM_TAG);
-            } else {
-                searchable = this.client.getSearchableContainer(SearchManager.ITEM_TOOLTIP);
-            }
-
-            this.handler.itemList.addAll(searchable.findAll(string.toLowerCase(Locale.ROOT)));
-        }
-
-        this.scrollPosition = 0.0F;
-        this.handler.scrollItems(0.0F);
-    }
-
-    private boolean isCreativeInventorySlot(@Nullable Slot slot) {
-        return slot != null && slot.inventory == INVENTORY;
-    }
-
-    protected boolean isClickOutsideBounds(double mouseX, double mouseY, int left, int top, int button) {
-        boolean bl = mouseX < (double)left || mouseY < (double)top || mouseX >= (double)(left + this.backgroundWidth) || mouseY >= (double)(top + this.backgroundHeight);
-        this.lastClickOutsideBounds = bl;
-        return this.lastClickOutsideBounds;
-    }
-
-    protected boolean isClickInScrollbar(double mouseX, double mouseY) {
-        int i = this.x;
-        int j = this.y;
-        int k = i + 175;
-        int l = j + 18;
-        int m = k + 14;
-        int n = l + 112;
-        return mouseX >= (double)k && mouseY >= (double)l && mouseX < (double)m && mouseY < (double)n;
-    }
-
-    private boolean hasScrollbar() {
-        return this.handler.shouldShowScrollbar();
-    }
-
-    @Environment(EnvType.CLIENT)
-    public static class ScreenTestHandler extends ScreenHandler {
-        public final DefaultedList<ItemStack> itemList = DefaultedList.of();
-        private final ScreenHandler parent;
-        private static MinecraftClient client = MinecraftClient.getInstance();
-
-        public ScreenTestHandler() {
-            super((ScreenHandlerType)null, 0);
-            this.parent = client.player.playerScreenHandler;
-            PlayerInventory playerInventory = client.player.getInventory();
-
-            int i;
-            for(i = 0; i < 5; ++i) {
-                for(int j = 0; j < 9; ++j) {
-                    this.addSlot(new LockableSlot(INVENTORY, i * 9 + j, 9 + j * 18, 18 + i * 18));
-                }
-            }
-
-            for(i = 0; i < 9; ++i) {
-                this.addSlot(new Slot(playerInventory, i, 9 + i * 18, 112));
-            }
-
-            this.scrollItems(0.0F);
-        }
-
-        public boolean canUse(PlayerEntity player) {
-            return true;
-        }
-
-        public void scrollItems(float position) {
-            int i = (this.itemList.size() + 9 - 1) / 9 - 5;
-            int j = (int)((double)(position * (float)i) + 0.5D);
-            if (j < 0) {
-                j = 0;
-            }
-
-            for(int k = 0; k < 5; ++k) {
-                for(int l = 0; l < 9; ++l) {
-                    int m = l + (k + j) * 9;
-                    if (m >= 0 && m < this.itemList.size()) {
-                        INVENTORY.setStack(l + k * 9, (ItemStack)this.itemList.get(m));
-                    } else {
-                        INVENTORY.setStack(l + k * 9, ItemStack.EMPTY);
-                    }
-                }
-            }
-
-        }
-
-        public boolean shouldShowScrollbar() {
-            return this.itemList.size() > 45;
-        }
-
-        public ItemStack transferSlot(PlayerEntity player, int index) {
-            if (index >= this.slots.size() - 9 && index < this.slots.size()) {
-                Slot slot = (Slot)this.slots.get(index);
-                if (slot != null && slot.hasStack()) {
-                    slot.setStack(ItemStack.EMPTY);
-                }
-            }
-
-            return ItemStack.EMPTY;
-        }
-
-        public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-            return slot.inventory != INVENTORY;
-        }
-
-        public boolean canInsertIntoSlot(Slot slot) {
-            return slot.inventory != INVENTORY;
-        }
-
-        public ItemStack getCursorStack() {
-            return this.parent.getCursorStack();
-        }
-
-        public void setCursorStack(ItemStack stack) {
-            this.parent.setCursorStack(stack);
-        }
-    }
-
-    @Environment(EnvType.CLIENT)
-    private static class CreativeSlot extends Slot {
-        final Slot slot;
-
-        public CreativeSlot(Slot slot, int invSlot, int x, int y) {
-            super(slot.inventory, invSlot, x, y);
-            this.slot = slot;
-        }
-
-        public void onTakeItem(PlayerEntity player, ItemStack stack) {
-            this.slot.onTakeItem(player, stack);
-        }
-
-        public boolean canInsert(ItemStack stack) {
-            return this.slot.canInsert(stack);
-        }
-
-        public ItemStack getStack() {
-            return this.slot.getStack();
-        }
-
-        public boolean hasStack() {
-            return this.slot.hasStack();
-        }
-
-        public void setStack(ItemStack stack) {
-            this.slot.setStack(stack);
-        }
-
-        public void markDirty() {
-            this.slot.markDirty();
-        }
-
-        public int getMaxItemCount() {
-            return this.slot.getMaxItemCount();
-        }
-
-        public int getMaxItemCount(ItemStack stack) {
-            return this.slot.getMaxItemCount(stack);
-        }
-
-        @Nullable
-        public Pair<Identifier, Identifier> getBackgroundSprite() {
-            return this.slot.getBackgroundSprite();
-        }
-
-        public ItemStack takeStack(int amount) {
-            return this.slot.takeStack(amount);
-        }
-
-        public boolean isEnabled() {
-            return this.slot.isEnabled();
-        }
-
-        public boolean canTakeItems(PlayerEntity playerEntity) {
-            return this.slot.canTakeItems(playerEntity);
-        }
-    }
-
-    @Environment(EnvType.CLIENT)
-    private static class LockableSlot extends Slot {
-        public LockableSlot(Inventory inventory, int i, int j, int k) {
-            super(inventory, i, j, k);
-        }
-
-        public boolean canTakeItems(PlayerEntity playerEntity) {
-            if (super.canTakeItems(playerEntity) && this.hasStack()) {
-                return this.getStack().getSubNbt("CustomCreativeLock") == null;
-            } else {
-                return !this.hasStack();
-            }
-        }
-    }
-}
+//
+//        inventory = new SimpleInventory(rowCount * 9);
+//
+//        client.keyboard.setRepeatEvents(true);
+//        TextRenderer textRenderer = this.textRenderer;
+//        this.searchBox = new TextFieldWidget(textRenderer, this.guiX + 82, this.guiY + 7, 80, 9, new TranslatableText("itemGroup.search"));
+//        this.searchBox.setMaxLength(50);
+//        this.searchBox.setDrawsBackground(false);
+//        this.searchBox.setVisible(true);
+//        this.searchBox.setEditableColor(16777215);
+//        this.addSelectableChild(this.searchBox);
+//    }
+//
+////    public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
+////        boolean newItem = true;
+////        for (int i = 0; i < handler.items.size(); i++) {
+////            VirtualItemStack virtualItemStack = handler.items.get(i);
+////            if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
+////                newItem = false;
+////                virtualItemStack.setItems(minecart, slot, itemstack.getCount());
+////                if (sortFilter == SortFilter.ALPHABETICALLY) {
+////                    handler.items.sort(nameComparator);
+////                } else {
+////                    handler.items.sort(quantityComparator);
+////                }
+////                search();
+////            }
+////        }
+////        if (newItem) {
+////            handler.items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
+////            if (sortFilter == SortFilter.ALPHABETICALLY) {
+////                handler.items.sort(nameComparator);
+////            } else {
+////                handler.items.sort(quantityComparator);
+////            }
+////            search();
+////        }
+////    }
+//
+//    private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
+//        int difference = virtualItemStack2.amount - virtualItemStack1.amount;
+//        if (difference > 0) {
+//            return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//        } else if (difference < 0) {
+//            return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//        } else {
+//            difference = virtualItemStack1.visualItemStack.getName().getString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getName().getString());
+//            if (difference > 0) {
+//                return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//            } else if (difference < 0) {
+//                return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//            } else {
+//                assert virtualItemStack1.visualItemStack.getNbt() != null;
+//                assert virtualItemStack2.visualItemStack.getNbt() != null;
+//                difference = virtualItemStack1.visualItemStack.getNbt().toString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getNbt().toString());
+//                if (difference > 0) {
+//                    return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//                } else if (difference < 0) {
+//                    return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//                } else {
+//                    return 0;
+//                }
+//            }
+//        }
+//    };
+//
+//    private final Comparator<VirtualItemStack> nameComparator = (virtualItemStack1, virtualItemStack2) -> {
+//        int difference = virtualItemStack1.visualItemStack.getName().getString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getName().getString());
+//        if (difference > 0) {
+//            return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//        } else if (difference < 0) {
+//            return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//        } else {
+//            difference = virtualItemStack2.amount - virtualItemStack1.amount;
+//            if (difference > 0) {
+//                return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//            } else if (difference < 0) {
+//                return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//            } else {
+//                assert virtualItemStack1.visualItemStack.getNbt() != null;
+//                assert virtualItemStack2.visualItemStack.getNbt() != null;
+//                difference = virtualItemStack1.visualItemStack.getNbt().toString().compareToIgnoreCase(virtualItemStack2.visualItemStack.getNbt().toString());
+//                if (difference > 0) {
+//                    return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
+//                } else if (difference < 0) {
+//                    return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
+//                } else {
+//                    return 0;
+//                }
+//            }
+//        }
+//    };
+//
+//    @Override
+//    public boolean isPauseScreen() { return false; }
+//
+//    protected static class ScreenTestHandler extends ScreenHandler{
+//        public final DefaultedList<VirtualItemStack> items = DefaultedList.of();
+//        private final ScreenHandler parent;
+//
+//        public ScreenTestHandler() {
+//            super(null, 0);
+//            this.parent = client.player.playerScreenHandler;
+//            PlayerInventory playerInventory = client.player.getInventory();
+//
+//            for(int i = 0; i < 3; i++) {
+//                for(int j = 0; j < 9; j++) {
+//                    this.addSlot(new Slot(playerInventory, i + j, 9 + i * 18, 112));
+//                }
+//            }
+//            for(int i = 27; i < 36; ++i) {
+//                this.addSlot(new Slot(playerInventory, i, 9 + i * 18, 112));
+//            }
+//        }
+//
+//        @Override
+//        public boolean canUse(PlayerEntity player) {
+//            return true;
+//        }
+//
+////        public void scrollItems(float position) {
+////            int i = (this.items.size() + 9 - 1) / 9 - 5;
+////            int j = (int)((double)(position * (float)i) + 0.5D);
+////            if (j < 0) {
+////                j = 0;
+////            }
+////
+////            for(int k = 0; k < 5; ++k) {
+////                for(int l = 0; l < 9; ++l) {
+////                    int m = l + (k + j) * 9;
+////                    if (m >= 0 && m < this.items.size()) {
+////                        INVENTORY.setStack(l + k * 9, (ItemStack)this.itemList.get(m));
+////                    } else {
+////                        CreativeInventoryScreen.INVENTORY.setStack(l + k * 9, ItemStack.EMPTY);
+////                    }
+////                }
+////            }
+////
+////        }
+//
+//        public boolean shouldShowScrollbar() {
+//            return this.items.size() > ;
+//        }
+//
+//        public ItemStack transferSlot(PlayerEntity player, int index) {
+//            if (index >= this.slots.size() - 9 && index < this.slots.size()) {
+//                Slot slot = this.slots.get(index);
+//                if (slot != null && slot.hasStack()) {
+//                    slot.setStack(ItemStack.EMPTY);
+//                }
+//            }
+//
+//            return ItemStack.EMPTY;
+//        }
+//
+////        public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
+////            return slot.inventory != CreativeInventoryScreen.INVENTORY;
+////        }
+//
+////        public boolean canInsertIntoSlot(Slot slot) {
+////            return slot.inventory != CreativeInventoryScreen.INVENTORY;
+////        }
+//
+//        public ItemStack getCursorStack() {
+//            return this.parent.getCursorStack();
+//        }
+//
+//        public void setCursorStack(ItemStack stack) {
+//            this.parent.setCursorStack(stack);
+//        }
+//    }
+//
+//}
