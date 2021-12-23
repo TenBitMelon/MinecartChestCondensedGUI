@@ -435,7 +435,7 @@ public class CondensedItemScreen extends Screen {
 
 
 //            mouseStack
-            visibleItems.get(0).moveToInventorySlot(20, 18);
+            MinecartManager.withDrawItemFromMinecartsNew(visibleItems.get(0), 20, 18);
 //            MinecartManager.addTask(new MinecartManager.MoveTask(visibleItems.get(0).containingMinecarts.get(0).minecart, 0, 38, 64));
         }
         /*
@@ -538,12 +538,16 @@ public class CondensedItemScreen extends Screen {
             if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (sortFilter == SortFilter.ALPHABETICALLY) {
-                    items.sort(nameComparator);
+                if (virtualItemStack.amount < 1) {
+                    items.remove(i);
                 } else {
-                    items.sort(quantityComparator);
+                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                        items.sort(nameComparator);
+                    } else {
+                        items.sort(quantityComparator);
+                    }
+                    search();
                 }
-                search();
             }
         }
         if (newItem) {
@@ -554,6 +558,25 @@ public class CondensedItemScreen extends Screen {
                 items.sort(quantityComparator);
             }
             search();
+        }
+    }
+
+    public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
+        for (int i = 0; i < items.size(); i++) {
+            VirtualItemStack currentVirtualItemStack = items.get(i);
+            if (currentVirtualItemStack.visualItemStack.isItemEqualIgnoreDamage(virtualItemStack.visualItemStack) && currentVirtualItemStack.visualItemStack.getDamage() == virtualItemStack.visualItemStack.getDamage()) {
+                currentVirtualItemStack.setItems(minecart, slot, newAmount);
+                if (currentVirtualItemStack.amount < 1) {
+                    items.remove(i);
+                } else {
+                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                        items.sort(nameComparator);
+                    } else {
+                        items.sort(quantityComparator);
+                    }
+                    search();
+                }
+            }
         }
     }
 

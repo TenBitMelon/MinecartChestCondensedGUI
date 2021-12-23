@@ -125,15 +125,51 @@ public class MinecartManager {
 
 
 
-    private void insertItemToMinecarts(ItemStack newItem) {
-
+    public static void insertItemToMinecarts(ItemStack newItem) {
     }
 
-    private void withDrawItemFromMinecarts(VirtualItemStack item, int amount, int toPlayerInventorySlot) {
-
+    public static void withDrawItemFromMinecarts(VirtualItemStack item, int amount, int toPlayerInventorySlot) {
+        int amountRemaining = Math.min(amount, item.visualItemStack.getMaxCount());
+        int itemMinecartIndex = 0;
+        int minecartSlotIndex = 0;
+        while (amountRemaining > 0 && item.containingMinecarts.size() > itemMinecartIndex) {
+            VirtualItemStack.ItemMinecart currentMinecart = item.containingMinecarts.get(itemMinecartIndex);
+            if (currentMinecart.itemContainingSlots.size() <= minecartSlotIndex) {
+                itemMinecartIndex += 1;
+                minecartSlotIndex = 0;
+            } else {
+                int currentSlotAmount = currentMinecart.itemSlotAmounts.get(minecartSlotIndex);
+                if (currentSlotAmount <= amountRemaining) {
+                    addTask(new MoveTask(currentMinecart.minecart, currentMinecart.itemContainingSlots.get(minecartSlotIndex), toPlayerInventorySlot + 27, 64));
+                    amountRemaining -= currentSlotAmount;
+                } else {
+                    addTask(new MoveTask(currentMinecart.minecart, currentMinecart.itemContainingSlots.get(minecartSlotIndex), toPlayerInventorySlot + 27, amountRemaining));
+                    amountRemaining = 0;
+                }
+                minecartSlotIndex += 1;
+            }
+        }
+        runTask();
     }
 
-    private void sortMinecarts(List<VirtualItemStack> minecartItems) {
+    public static void withDrawItemFromMinecartsNew(VirtualItemStack item, int amount, int toPlayerInventorySlot) {
+        int amountRemaining = Math.min(amount, item.visualItemStack.getMaxCount());
+        while (amountRemaining > 0 && item.containingMinecarts.size() > 0) {
+            int currentSlotAmount = item.containingMinecarts.get(0).itemSlotAmounts.get(0);
+            if (currentSlotAmount <= amountRemaining) {
+                addTask(new MoveTask(item.containingMinecarts.get(0).minecart, item.containingMinecarts.get(0).itemContainingSlots.get(0), toPlayerInventorySlot + 27, 64));
+                gui.setItems(item.containingMinecarts.get(0).minecart, item, 0, item.containingMinecarts.get(0).itemContainingSlots.get(0));
+                amountRemaining -= currentSlotAmount;
+            } else {
+                addTask(new MoveTask(item.containingMinecarts.get(0).minecart, item.containingMinecarts.get(0).itemContainingSlots.get(0), toPlayerInventorySlot + 27, amountRemaining));
+                gui.setItems(item.containingMinecarts.get(0).minecart, item, amountRemaining, item.containingMinecarts.get(0).itemContainingSlots.get(0));
+                amountRemaining = 0;
+            }
+        }
+        runTask();
+    }
+
+    public static void sortMinecarts(List<VirtualItemStack> minecartItems) {
 
     }
 }
