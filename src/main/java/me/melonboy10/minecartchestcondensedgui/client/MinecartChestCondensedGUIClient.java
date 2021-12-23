@@ -1,7 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client;
 
 import me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemScreen;
-import me.melonboy10.minecartchestcondensedgui.client.inventory.ScreenTest;
+//import me.melonboy10.minecartchestcondensedgui.client.inventory.ScreenTest;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -47,7 +47,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
         ));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (keyBinding2.wasPressed()) {
-                client.setScreen(new ScreenTest());
+//                client.setScreen(new ScreenTest());
             }
         });
 
