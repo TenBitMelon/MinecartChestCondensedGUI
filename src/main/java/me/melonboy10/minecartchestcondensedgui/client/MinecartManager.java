@@ -1,6 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client;
 
 import me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemScreen;
+import me.melonboy10.minecartchestcondensedgui.client.inventory.VirtualItemStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
@@ -120,5 +121,19 @@ public class MinecartManager {
             }
             super.run();
         }
+    }
+
+
+
+    private void insertItemToMinecarts(ItemStack newItem) {
+
+    }
+
+    private void withDrawItemFromMinecarts(VirtualItemStack item, int amount, int toPlayerInventorySlot) {
+
+    }
+
+    private void sortMinecarts(List<VirtualItemStack> minecartItems) {
+
     }
 }
