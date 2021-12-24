@@ -12,6 +12,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenHandler;
@@ -27,6 +28,8 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class CondensedItemScreen extends Screen {
@@ -535,7 +538,7 @@ public class CondensedItemScreen extends Screen {
         boolean newItem = true;
         for (int i = 0; i < items.size(); i++) {
             VirtualItemStack virtualItemStack = items.get(i);
-            if (virtualItemStack.visualItemStack.isItemEqualIgnoreDamage(itemstack) && virtualItemStack.visualItemStack.getDamage() == itemstack.getDamage()) {
+            if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
                 if (virtualItemStack.amount < 1) {
@@ -564,7 +567,7 @@ public class CondensedItemScreen extends Screen {
     public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
         for (int i = 0; i < items.size(); i++) {
             VirtualItemStack currentVirtualItemStack = items.get(i);
-            if (currentVirtualItemStack.visualItemStack.isItemEqualIgnoreDamage(virtualItemStack.visualItemStack) && currentVirtualItemStack.visualItemStack.getDamage() == virtualItemStack.visualItemStack.getDamage()) {
+            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
                 currentVirtualItemStack.setItems(minecart, slot, newAmount);
                 if (currentVirtualItemStack.amount < 1) {
                     items.remove(i);
