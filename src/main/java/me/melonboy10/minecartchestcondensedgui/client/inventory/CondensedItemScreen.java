@@ -532,6 +532,13 @@ public class CondensedItemScreen extends Screen {
         this.searchBox.setVisible(true);
         this.searchBox.setEditableColor(16777215);
         this.addSelectableChild(this.searchBox);
+
+        if (rowCount < Math.ceil(visibleItems.size()/9F)) {
+            rowsScrolled = Math.round(scrollPosition * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+        } else {
+            scrollPosition = 0;
+            rowsScrolled = 0;
+        }
     }
 
     public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
