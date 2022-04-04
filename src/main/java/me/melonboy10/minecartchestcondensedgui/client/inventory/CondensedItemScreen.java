@@ -96,16 +96,17 @@ public class CondensedItemScreen extends Screen {
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         renderBackground(matrices);
         drawGrid(matrices, delta, mouseX, mouseY);
+        drawSearchBox(matrices, delta, mouseX, mouseY);
+        drawLabels(matrices, delta, mouseX, mouseY);
+        drawScrollBar(matrices, delta, mouseX, mouseY);
+        drawButtons(matrices, delta, mouseX, mouseY);
         drawPlayerInventory(matrices, delta, mouseX, mouseY);
         drawMinecartItems(matrices, delta, mouseX, mouseY);
         drawPlayerTooltips(matrices, delta, mouseX, mouseY);
         drawMinecartTooltips(matrices, delta, mouseX, mouseY);
+        drawButtonTooltips(matrices, delta, mouseX, mouseY);
         drawTouchDragStack(matrices, delta, mouseX, mouseY);
         drawPickStack(matrices, delta, mouseX, mouseY);
-        drawButtons(matrices, delta, mouseX, mouseY);
-        drawLabels(matrices, delta, mouseX, mouseY);
-        drawSearchBox(matrices, delta, mouseX, mouseY);
-        drawScrollBar(matrices, delta, mouseX, mouseY);
     }
 
     private void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -141,6 +142,27 @@ public class CondensedItemScreen extends Screen {
             }
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
                 this.drawTexture(matrices, x, y, 213, i * 16, 16, 16);
+            } else {
+                this.drawTexture(matrices, x, y, 197, i * 16, 16, 16);
+            }
+            if (i == 1 || i == 3 || i == 5) i++;
+        }
+    }
+
+    public void drawButtonTooltips(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        for (int i = 0, j = 0; j < 4; i++, j++) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderTexture(0, GRID);
+
+            int x = guiX - 18;
+            int y = guiY + 8 + (j * 18);
+
+            switch (i) {
+                case 1 -> { if (sortDirection.equals(SortDirection.ASCENDING)) i++; }
+                case 3 -> { if (sortFilter.equals(SortFilter.ALPHABETICALLY)) i++; }
+                case 5 -> { if (!showCraftingTable) i++; }
+            }
+            if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
                 renderTooltip(matrices, new LiteralText(switch (j) {
                     case 0 -> "Sort Nearby Minecarts"; // Sort Carts
                     case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
@@ -148,8 +170,6 @@ public class CondensedItemScreen extends Screen {
                     case 3 -> showCraftingTable ? "Showing Crafting Table" : "Hiding Crafting Table"; // Crafting table
                     default -> throw new IllegalStateException("Unexpected value: " + j);
                 }), mouseX, mouseY);
-            } else {
-                this.drawTexture(matrices, x, y, 197, i * 16, 16, 16);
             }
             if (i == 1 || i == 3 || i == 5) i++;
         }
