@@ -96,14 +96,16 @@ public class CondensedItemScreen extends Screen {
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         renderBackground(matrices);
         drawGrid(matrices, delta, mouseX, mouseY);
+        drawPlayerInventory(matrices, delta, mouseX, mouseY);
+        drawMinecartItems(matrices, delta, mouseX, mouseY);
+        drawPlayerTooltips(matrices, delta, mouseX, mouseY);
+        drawMinecartTooltips(matrices, delta, mouseX, mouseY);
+        drawTouchDragStack(matrices, delta, mouseX, mouseY);
+        drawPickStack(matrices, delta, mouseX, mouseY);
         drawButtons(matrices, delta, mouseX, mouseY);
         drawLabels(matrices, delta, mouseX, mouseY);
         drawSearchBox(matrices, delta, mouseX, mouseY);
         drawScrollBar(matrices, delta, mouseX, mouseY);
-        drawPlayerInventory(matrices, delta, mouseX, mouseY);
-        drawMinecartItems(matrices, delta, mouseX, mouseY);
-        drawTouchDragStack(matrices, delta, mouseX, mouseY);
-        drawPickStack(matrices, delta, mouseX, mouseY);
     }
 
     private void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -184,27 +186,12 @@ public class CondensedItemScreen extends Screen {
             else
                 slotY = this.guiY + rowCount * 18 + 94;
             if (showCraftingTable && craftingTableLocation != null) slotY += 56;
-            itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
+            itemRenderer.renderInGui(inventoryItem, slotX, slotY);
             itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() == 1 ? "" : Integer.toString(inventoryItem.getCount()));
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
                 hoveredInventory = HoveredInventory.PLAYER;
-            }
-        }
-        for (int i = 0; i < 36; i++) {
-            ItemStack inventoryItem = playerItems.get(i);
-            int slotX = this.guiX + 8 + 18*(i % 9);
-            int slotY;
-            if (i < 27)
-                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
-            else
-                slotY = this.guiY + rowCount * 18 + 94;
-            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
-            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
-                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
-                }
             }
         }
     }
@@ -215,7 +202,8 @@ public class CondensedItemScreen extends Screen {
             int slotY = this.guiY + 20 + 18 * (i / 9);
             if ((i + rowsScrolled*9) < visibleItems.size()) {
                 ItemStack inventoryItem = visibleItems.get(i + rowsScrolled*9).visualItemStack;
-                itemRenderer.renderInGuiWithOverrides(inventoryItem, slotX, slotY);
+                itemRenderer.renderInGui(inventoryItem, slotX, slotY);
+                itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
                 String amountString;
                 if (visibleItems.get(i + rowsScrolled*9).amount > 999) {
                     amountString = Float.toString((float)Math.round(((float)(visibleItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
@@ -233,6 +221,27 @@ public class CondensedItemScreen extends Screen {
                 hoveredInventory = HoveredInventory.MINECARTS;
             }
         }
+    }
+
+    private void drawPlayerTooltips(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        for (int i = 0; i < 36; i++) {
+            ItemStack inventoryItem = playerItems.get(i);
+            int slotX = this.guiX + 8 + 18*(i % 9);
+            int slotY;
+            if (i < 27)
+                slotY = this.guiY + (rowCount * 18) + 36 + (18*(i / 9));
+            else
+                slotY = this.guiY + rowCount * 18 + 94;
+            if (showCraftingTable && craftingTableLocation != null) slotY += 56;
+            if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
+                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                    renderTooltip(matrices, inventoryItem, mouseX, mouseY);
+                }
+            }
+        }
+    }
+
+    private void drawMinecartTooltips(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
