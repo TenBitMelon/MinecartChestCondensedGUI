@@ -229,12 +229,7 @@ public class CondensedItemScreen extends Screen {
                 ItemStack inventoryItem = searchedVisibleItems.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
-                String amountString;
-                if (searchedVisibleItems.get(i + rowsScrolled*9).amount > 999) {
-                    amountString = Float.toString((float)Math.round(((float)(searchedVisibleItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
-                } else {
-                    amountString = searchedVisibleItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(searchedVisibleItems.get(i + rowsScrolled*9).amount);
-                }
+                String amountString = abbreviateAmount(searchedVisibleItems.get(i + rowsScrolled*9).amount);
                 MatrixStack textMatrixStack = new MatrixStack();
                 textMatrixStack.scale(0.5F, 0.5F, 1);
                 textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
@@ -913,6 +908,22 @@ public class CondensedItemScreen extends Screen {
             search();
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    private String abbreviateAmount(int amount) {
+        if (amount > 999999999) {
+            return Math.round(amount/100000000F)/10F + "B";
+        } else if (amount > 99999999) {
+            return Math.round(amount/1000000F) + "M";
+        } else if (amount > 999999) {
+            return Math.round(amount/100000F)/10F + "M";
+        } else if (amount > 99999) {
+            return Math.round(amount/1000F)+ "K";
+        } else if (amount > 9999) {
+            return Math.round(amount/100F)/10F + "K";
+        } else {
+            return amount == 1 ? "" : Integer.toString(amount);
+        }
     }
 
     private void search() {
