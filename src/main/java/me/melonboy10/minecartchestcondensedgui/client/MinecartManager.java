@@ -35,7 +35,7 @@ public class MinecartManager {
             taskQueue.get(0).openCart();
         } else {
             running = false;
-            client.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentTask.syncID));
+            if (currentTask != null) client.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentTask.syncID));
         }
     }
 

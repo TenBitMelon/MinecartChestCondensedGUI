@@ -1,5 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client;
 
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemScreen;
 //import me.melonboy10.minecartchestcondensedgui.client.inventory.ScreenTest;
 import net.fabricmc.api.ClientModInitializer;
@@ -7,15 +9,24 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
+import net.minecraft.inventory.StackReference;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleType;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.LiteralText;
 import org.lwjgl.glfw.GLFW;
 
@@ -50,6 +61,22 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
 //                client.setScreen(new ScreenTest());
             }
         });
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+            dispatcher.register(CommandManager.literal("fmi").then(
+                CommandManager.argument("item", ItemStackArgumentType.itemStack())
+                    .executes(
+                        context -> {
+                            for (int i = 0; i < 36; i++) {
+                                StackReference stackReference = MinecraftClient.getInstance().player.getStackReference(i);
+                                stackReference.set(ItemStackArgumentType.getItemStackArgument(context, "item").createStack(i + 1, false));
+                            }
+                            return 1;
+                        }
+                    )
+                ));
+            }
+        );
+
 
         // Check for key bind press and tick the minecart searcher
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
