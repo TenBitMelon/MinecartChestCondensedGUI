@@ -422,13 +422,25 @@ public class CondensedItemScreen extends Screen {
                             //move all towards
                             client.player.sendMessage(new LiteralText("move all towards"), false);
                         } else {
-                            //place all
-                            client.player.sendMessage(new LiteralText("place all"), false);
-                            mouseStack = ItemStack.EMPTY;
+                            if (ItemStack.canCombine(playerItems.get(hoveredSlot), mouseStack)) {
+                                //place all
+                                client.player.sendMessage(new LiteralText("place all"), false);
+                                mouseStack = ItemStack.EMPTY;
+                            } else {
+                                //swap
+                                client.player.sendMessage(new LiteralText("swap"), false);
+                                mouseStack = playerItems.get(hoveredSlot);
+                            }
                         }
                     } else if (button == 1) {
-                        //place one
-                        client.player.sendMessage(new LiteralText("place one"), false);
+                        if (ItemStack.canCombine(playerItems.get(hoveredSlot), mouseStack)) {
+                            //place one
+                            client.player.sendMessage(new LiteralText("place one"), false);
+                        } else {
+                            //swap
+                            client.player.sendMessage(new LiteralText("swap"), false);
+                            mouseStack = playerItems.get(hoveredSlot);
+                        }
                     }
                 }
             }
