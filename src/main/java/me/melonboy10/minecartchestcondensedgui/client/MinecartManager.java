@@ -5,6 +5,7 @@ import me.melonboy10.minecartchestcondensedgui.client.inventory.VirtualItemStack
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
@@ -34,6 +35,7 @@ public class MinecartManager {
             taskQueue.get(0).openCart();
         } else {
             running = false;
+            client.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentTask.syncID));
         }
     }
 
@@ -69,7 +71,11 @@ public class MinecartManager {
                     ItemStack itemStack = contents.get(i);
                     if (taskQueue.size() == 1) {
                         gui.playerItems.set(i - 27, itemStack);
-                        client.player.getInventory().setStack(i - 27, itemStack);
+                        if (i >= 27 && i < 54) {
+                            client.player.getInventory().setStack(i - 18, itemStack);
+                        } else if (i >= 54 && i < 63) {
+                            client.player.getInventory().setStack(i - 54, itemStack);
+                        }
                     }
                 }
                 run();
