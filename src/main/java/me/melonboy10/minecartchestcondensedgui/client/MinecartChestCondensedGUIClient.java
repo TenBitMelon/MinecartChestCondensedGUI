@@ -23,6 +23,7 @@ import net.minecraft.inventory.StackReference;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.server.command.CommandManager;
@@ -62,19 +63,15 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
             }
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
-            dispatcher.register(CommandManager.literal("fmi").then(
-                CommandManager.argument("item", ItemStackArgumentType.itemStack())
-                    .executes(
-                        context -> {
-                            for (int i = 0; i < 36; i++) {
-                                StackReference stackReference = MinecraftClient.getInstance().player.getStackReference(i);
-                                stackReference.set(ItemStackArgumentType.getItemStackArgument(context, "item").createStack(i + 1, false));
-                            }
-                            return 1;
-                        }
-                    )
-                ));
-            }
+            dispatcher.register(CommandManager.literal("fmi").executes(
+                context -> {
+                    for (int i = 0; i < 36; i++) {
+                        StackReference stackReference = MinecraftClient.getInstance().player.getStackReference(i);
+                        stackReference.set(new ItemStack(Items.MELON, i + 1));
+                    }
+                    return 1;
+                }
+            ));}
         );
 
 

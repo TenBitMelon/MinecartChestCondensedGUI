@@ -12,6 +12,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -74,7 +78,8 @@ public class CondensedItemScreen extends Screen {
 
     private boolean draggingItems;
     private int draggingItemsButton;
-    private final ArrayList<Integer> draggingItemSlots = new ArrayList<>();
+    private int draggedStackRemainder;
+    private final Set<Integer> draggingItemSlots = new HashSet<>();
 
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<VirtualItemStack> visibleItems = new ArrayList<>();
@@ -215,7 +220,8 @@ public class CondensedItemScreen extends Screen {
                 hoveredInventory = HoveredInventory.PLAYER;
             }
             if (draggingItemSlots.contains(i)) {
-                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, new Color(255, draggingItemsButton * 255, 0).getRGB(), new Color(255, draggingItemsButton * 255, 0).getRGB(), 200);
+                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
+                itemRenderer.renderInGui(mouseStack.copy(), slotX, slotY);
             }
         }
     }
@@ -287,7 +293,7 @@ public class CondensedItemScreen extends Screen {
     private void drawPickStack(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         this.itemRenderer.zOffset = 200.0F;
         itemRenderer.renderInGuiWithOverrides(mouseStack, (mouseX - 8), (mouseY - 8));
-        itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, (mouseX - 8), (mouseY - 8), mouseStack.getCount() == 1 ? "" : Integer.toString(mouseStack.getCount()));
+        itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, (mouseX - 8), (mouseY - 8), mouseStack.getCount() == 1 ? "" : draggingItems ? String.valueOf(draggedStackRemainder) : String.valueOf(mouseStack.getCount()));
         this.itemRenderer.zOffset = 0.0F;
     }
 
@@ -308,15 +314,54 @@ public class CondensedItemScreen extends Screen {
             rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(visibleItems.size()/9F) - rowCount));
             scrolling = true;
             return true;
-        } else if (hoveredInventory.equals(HoveredInventory.PLAYER) && !mouseStack.isEmpty()) {
-            if (draggingItems) {
-                draggingItemSlots.add(hoveredSlot);
-            } else {
-                draggingItems = true;
-                draggingItemsButton = button;
+        } else if (hoveredInventory.equals(HoveredInventory.PLAYER)) {
+            if (hoveredSlot > -1
+                && !mouseStack.isEmpty()
+                && (mouseStack.getCount() > this.draggingItemSlots.size() || this.draggingItemsButton == 2)
+                && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR || ItemStack.canCombine(mouseStack, visiblePlayerItems.get(hoveredSlot)))) {
+                if (draggingItems) {
+                    draggingItemSlots.add(hoveredSlot);
+                    calculateOffset();
+                } else {
+                    draggingItems = true;
+                    draggingItemsButton = button;
+                }
             }
         }
         return false;
+    }
+
+    private void calculateOffset() {
+        if (!mouseStack.isEmpty() && draggingItems) {
+            if (draggingItemsButton == 2) {
+                this.draggedStackRemainder = mouseStack.getMaxCount();
+            } else {
+                this.draggedStackRemainder = mouseStack.getCount();
+
+                for(int slot : draggingItemSlots) {
+                    ItemStack itemStack2 = mouseStack.copy();
+                    ItemStack itemStack3 = visiblePlayerItems.get(slot);
+                    int i = itemStack3.isEmpty() ? 0 : itemStack3.getCount();
+                    calculateStackSize(draggingItemSlots.size(), draggingItemsButton, itemStack2, i);
+                    int j = Math.min(64, itemStack2.getMaxCount());
+                    if (itemStack2.getCount() > j) {
+                        itemStack2.setCount(j);
+                    }
+
+                    this.draggedStackRemainder -= itemStack2.getCount() - i;
+                }
+
+            }
+        }
+    }
+
+    public static void calculateStackSize(int size, int mode, ItemStack stack, int stackSize) {
+        switch (mode) {
+            case 0 -> stack.setCount(MathHelper.floor((float) stack.getCount() / (float) size));
+            case 1 -> stack.setCount(1);
+            case 2 -> stack.setCount(stack.getItem().getMaxCount());
+        }
+        stack.increment(stackSize);
     }
 
     @Override
@@ -337,12 +382,34 @@ public class CondensedItemScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         scrolling = false;
-        boolean isDoubleClicking = checkForDoubleClick(button);
-        if (!checkButtons(mouseX, mouseY))
-            checkItems(mouseX, mouseY, button, isDoubleClicking);
+        if (draggingItems && draggingItemsButton != button) {
+            draggingItems = false;
+            draggingItemSlots.clear();
+            return true;
+        } else if (draggingItems && !draggingItemSlots.isEmpty()) {
+//            this.client.interactionManager.clickSlot(0, -999, ScreenHandler.packQuickCraftData(0, draggingItemsButton), SlotActionType.QUICK_CRAFT, this.client.player); // Signals that the drag has begun
 
-        draggingItems = false;
-        draggingItemSlots.clear();
+            int itemsPerSlot = 1;
+            if (draggingItemsButton == 0) itemsPerSlot = mouseStack.getCount() / draggingItemSlots.size();
+
+            for(int slot : draggingItemSlots) {
+//                this.client.interactionManager.clickSlot(0, slot, ScreenHandler.packQuickCraftData(1, draggingItemsButton), SlotActionType.QUICK_CRAFT, this.client.player); // one event per slot dragged on
+                ItemStack stack = mouseStack.copy();
+                stack.setCount(itemsPerSlot + visiblePlayerItems.get(slot).getCount());
+                visiblePlayerItems.set(slot, stack);
+            }
+
+            mouseStack.setCount(draggedStackRemainder);
+            draggingItems = false;
+            draggingItemSlots.clear();
+            return true;
+
+//            this.client.interactionManager.clickSlot(0, -999, ScreenHandler.packQuickCraftData(2, draggingItemsButton), SlotActionType.QUICK_CRAFT, this.client.player); // signals that the drag has ended
+        }else {
+            boolean isDoubleClicking = checkForDoubleClick(button);
+            if (!checkButtons(mouseX, mouseY))
+                checkItems(mouseX, mouseY, button, isDoubleClicking);
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -421,12 +488,6 @@ public class CondensedItemScreen extends Screen {
                                 visiblePlayerItems.set(i, ItemStack.EMPTY);
                             }
                         }
-                        if (sortFilter == SortFilter.ALPHABETICALLY) {
-                            visibleItems.sort(nameComparator);
-                        } else {
-                            visibleItems.sort(quantityComparator);
-                        }
-                        search();
                     } else {
                         //Quick Move hovered Item stack
                         client.player.sendMessage(new LiteralText("quick move"), false);
@@ -439,13 +500,13 @@ public class CondensedItemScreen extends Screen {
                         VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
                         increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
                         visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
-                        if (sortFilter == SortFilter.ALPHABETICALLY) {
-                            visibleItems.sort(nameComparator);
-                        } else {
-                            visibleItems.sort(quantityComparator);
-                        }
-                        search();
                     }
+                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                        visibleItems.sort(nameComparator);
+                    } else {
+                        visibleItems.sort(quantityComparator);
+                    }
+                    search();
                 } else if (button == 1) {
                     //Quick Move hovered Item stack
                     client.player.sendMessage(new LiteralText("quick move"), false);

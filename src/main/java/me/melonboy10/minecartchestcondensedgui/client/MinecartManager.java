@@ -5,6 +5,7 @@ import me.melonboy10.minecartchestcondensedgui.client.inventory.VirtualItemStack
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
@@ -67,7 +68,11 @@ public class MinecartManager {
                 for (int i = 27; i < contents.size() && i < 63; i++) {
                     ItemStack itemStack = contents.get(i);
                     if (taskQueue.size() == 1) {
-                        gui.visiblePlayerItems.set(i - 27, itemStack);
+
+                        if (itemStack.getItem() != Items.AIR) {
+                            gui.visiblePlayerItems.set(i - 27, itemStack);
+                            System.out.println(itemStack);
+                        }
                         if (i >= 27 && i < 54) {
                             client.player.getInventory().setStack(i - 18, itemStack);
                         } else if (i >= 54 && i < 63) {
