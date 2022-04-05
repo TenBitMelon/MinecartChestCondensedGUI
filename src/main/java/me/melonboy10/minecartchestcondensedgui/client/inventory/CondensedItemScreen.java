@@ -69,6 +69,7 @@ public class CondensedItemScreen extends Screen {
     private int lastClickedSlot;
     private HoveredInventory lastClickedInventory;
     private ItemStack lastClickedItem = ItemStack.EMPTY;
+    private VirtualItemStack lastClickedVirtualItemStack = new VirtualItemStack(ItemStack.EMPTY, 0, new ArrayList<VirtualItemStack.ItemMinecart>());
     private int lastClickedButton;
 
     private boolean draggingItems;
@@ -563,23 +564,179 @@ public class CondensedItemScreen extends Screen {
                     if (isDoubleClicking && !mouseStack.equals(ItemStack.EMPTY)) {
                         //Move all away
                         client.player.sendMessage(new LiteralText("move all away"), false);
+                        int decreasingItemIndex = getVirtualItemStackForItem(lastClickedVirtualItemStack.visualItemStack);
+                        VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                        for (int i = 0; i < 36; i++) {
+                            int playerInventorySlot = 35 - i;
+                            if (visiblePlayerItems.get(playerInventorySlot).isEmpty()) {
+                                if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
+                                    ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                    newItemStack.setCount(newItemStack.getMaxCount());
+                                    decreasingItem.amount = decreasingItem.amount - decreasingItem.visualItemStack.getMaxCount();
+                                    visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                } else {
+                                    ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                    newItemStack.setCount(decreasingItem.amount);
+                                    visibleItems.remove(getVirtualItemStackForItem(decreasingItem.visualItemStack));
+                                    visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                    break;
+                                }
+                            } else if (ItemStack.canCombine(decreasingItem.visualItemStack, visiblePlayerItems.get(playerInventorySlot))) {
+                                if (decreasingItem.amount > visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount()) {
+                                    decreasingItem.amount = decreasingItem.amount - (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount());
+                                    visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getMaxCount());
+                                } else {
+                                    visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getCount() + decreasingItem.amount);
+                                    visibleItems.remove(decreasingItemIndex);
+                                    break;
+                                }
+                            }
+                        }
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     } else {
                         //Quick Move hovered Item stack
                         client.player.sendMessage(new LiteralText("quick move"), false);
-
+                        lastClickedVirtualItemStack = searchedVisibleItems.get(hoveredSlot);
+                        int decreasingItemIndex = getVirtualItemStackForItem(lastClickedVirtualItemStack.visualItemStack);
+                        VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                        int itemsToTransfer = decreasingItem.visualItemStack.getMaxCount();
+                        for (int i = 0; i < 36; i++) {
+                            int playerInventorySlot = 35 - i;
+                            if (visiblePlayerItems.get(playerInventorySlot).isEmpty()) {
+                                if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
+                                    ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                    newItemStack.setCount(newItemStack.getMaxCount());
+                                    decreasingItem.amount = decreasingItem.amount - decreasingItem.visualItemStack.getMaxCount();
+                                    visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                    break;
+                                } else {
+                                    ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                    newItemStack.setCount(decreasingItem.amount);
+                                    visibleItems.remove(getVirtualItemStackForItem(decreasingItem.visualItemStack));
+                                    visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                    break;
+                                }
+                            } else if (ItemStack.canCombine(decreasingItem.visualItemStack, visiblePlayerItems.get(playerInventorySlot))) {
+                                if (decreasingItem.amount > Math.min(itemsToTransfer, visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount())) {
+                                    decreasingItem.amount = decreasingItem.amount - (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount());
+                                    visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getMaxCount());
+                                    itemsToTransfer = itemsToTransfer - Math.min(itemsToTransfer, (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount()));
+                                } else {
+                                    visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getCount() + decreasingItem.amount);
+                                    visibleItems.remove(decreasingItemIndex);
+                                    break;
+                                }
+                            }
+                            if (itemsToTransfer == 0) {
+                                break;
+                            }
+                        }
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     }
                 } else if (button == 1) {
                     //Quick Move hovered Item stack
                     client.player.sendMessage(new LiteralText("quick move"), false);
+                    int decreasingItemIndex = getVirtualItemStackForItem(lastClickedVirtualItemStack.visualItemStack);
+                    VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                    int itemsToTransfer = decreasingItem.visualItemStack.getMaxCount();
+                    for (int i = 0; i < 36; i++) {
+                        int playerInventorySlot = 35 - i;
+                        if (visiblePlayerItems.get(playerInventorySlot).isEmpty()) {
+                            if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
+                                ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                newItemStack.setCount(newItemStack.getMaxCount());
+                                decreasingItem.amount = decreasingItem.amount - decreasingItem.visualItemStack.getMaxCount();
+                                visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                break;
+                            } else {
+                                ItemStack newItemStack = decreasingItem.visualItemStack.copy();
+                                newItemStack.setCount(decreasingItem.amount);
+                                visibleItems.remove(getVirtualItemStackForItem(decreasingItem.visualItemStack));
+                                visiblePlayerItems.set(playerInventorySlot, newItemStack);
+                                break;
+                            }
+                        } else if (ItemStack.canCombine(decreasingItem.visualItemStack, visiblePlayerItems.get(playerInventorySlot))) {
+                            if (decreasingItem.amount > Math.min(itemsToTransfer, visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount())) {
+                                decreasingItem.amount = decreasingItem.amount - (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount());
+                                visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getMaxCount());
+                                itemsToTransfer = itemsToTransfer - Math.min(itemsToTransfer, (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount()));
+                            } else {
+                                visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getCount() + decreasingItem.amount);
+                                visibleItems.remove(decreasingItemIndex);
+                                break;
+                            }
+                        }
+                        if (itemsToTransfer == 0) {
+                            break;
+                        }
+                    }
+                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                        visibleItems.sort(nameComparator);
+                    } else {
+                        visibleItems.sort(quantityComparator);
+                    }
+                    search();
                 }
             } else {
                 if (mouseStack.equals(ItemStack.EMPTY)) {
                     if (button == 0) {
                         //Pickup one
                         client.player.sendMessage(new LiteralText("pickup one"), false);
+                        int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot).visualItemStack);
+                        VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                        if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
+                            ItemStack newMouseStack = decreasingItem.visualItemStack.copy();
+                            newMouseStack.setCount(newMouseStack.getMaxCount());
+                            mouseStack = newMouseStack;
+                            decreasingItem.amount = decreasingItem.amount - decreasingItem.visualItemStack.getMaxCount();
+                        } else {
+                            ItemStack newMouseStack = searchedVisibleItems.get(hoveredSlot).visualItemStack.copy();
+                            newMouseStack.setCount(decreasingItem.amount);
+                            mouseStack = newMouseStack;
+                            visibleItems.remove(decreasingItemIndex);
+                        }
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     } else if (button == 1) {
                         //pickup half
                         client.player.sendMessage(new LiteralText("pickup half"), false);
+                        int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot).visualItemStack);
+                        VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                        if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
+                            ItemStack newMouseStack = decreasingItem.visualItemStack.copy();
+                            newMouseStack.setCount(newMouseStack.getMaxCount()/2);
+                            mouseStack = newMouseStack;
+                            decreasingItem.amount = decreasingItem.amount - decreasingItem.visualItemStack.getMaxCount()/2;
+                        } else {
+                            ItemStack newMouseStack = searchedVisibleItems.get(hoveredSlot).visualItemStack.copy();
+                            newMouseStack.setCount((int)Math.ceil(decreasingItem.amount/2F));
+                            mouseStack = newMouseStack;
+                            if (decreasingItem.amount > 1) {
+                                decreasingItem.amount = decreasingItem.amount/2;
+                            } else {
+                                visibleItems.remove(decreasingItemIndex);
+                            }
+                        }
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     }
                 } else {
                     if (button == 0) {
