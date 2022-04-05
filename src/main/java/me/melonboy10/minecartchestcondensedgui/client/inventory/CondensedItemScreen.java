@@ -385,106 +385,87 @@ public class CondensedItemScreen extends Screen {
 
         int y = (this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ));
         if (isMouseOver(mouseX, mouseY, this.guiX, y, this.guiX + 176, y + 88)) { // Handle Player Inventory
-
-            if (mouseStack.equals(ItemStack.EMPTY)) { //pick up the item there
-                if (hasShiftDown()) {
-
-                } else {
-                    switch (button) {
-                        case 0 -> { // left click
-                            mouseStack = playerItems.get(hoveredSlot);
-                            playerItems.set(hoveredSlot, ItemStack.EMPTY);
-                        }
-                        case 1 -> { // right click
-                            mouseStack = playerItems.get(hoveredSlot).copy();
-                            mouseStack.setCount((int) Math.ceil(mouseStack.getCount() / 2.0));
-                            ItemStack swapItem = playerItems.get(hoveredSlot).copy();
-                            swapItem.setCount((int) Math.floor(swapItem.getCount() / 2.0));
-                            playerItems.set(hoveredSlot, swapItem);
-                        }
-                    }
-                }
-            } else {
-                if (isDoubleClicking && mouseStack.isStackable()) {
-                    int playerStackRoom = mouseStack.getMaxCount() - mouseStack.getCount();
-                    for (int i = 0; i < 36; i++) {
-                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(i))) {
-                            int currentItemStackAmount = playerItems.get(i).getCount();
-                            if (playerStackRoom >= currentItemStackAmount) {
-                                playerItems.set(i, ItemStack.EMPTY);
-                                mouseStack.increment(currentItemStackAmount);
-                                playerStackRoom -= currentItemStackAmount;
-                            } else {
-                                playerItems.get(i).decrement(playerStackRoom);
-                                mouseStack.increment(currentItemStackAmount);
-                                playerStackRoom -= currentItemStackAmount;
-                            }
-                            if (playerStackRoom < 1) {
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
-                        playerItems.set(hoveredSlot, mouseStack);
-                        mouseStack = ItemStack.EMPTY;
+            if (hasShiftDown()) {
+                if (button == 0) {
+                    if (isDoubleClicking && !mouseStack.equals(ItemStack.EMPTY)) {
+                        //Move all away
+                        client.player.sendMessage(new LiteralText("move all away"), false);
                     } else {
-                        if (mouseStack.isItemEqualIgnoreDamage(playerItems.get(hoveredSlot))) {
+                        //Quick Move hovered Item stack
+                        client.player.sendMessage(new LiteralText("quick move"), false);
 
+                    }
+                } else if (button == 1) {
+                    //Quick Move hovered Item stack
+                    client.player.sendMessage(new LiteralText("quick move"), false);
+                }
+            } else {
+                if (mouseStack.equals(ItemStack.EMPTY)) {
+                    if (button == 0) {
+                        //Pickup one
+                        client.player.sendMessage(new LiteralText("pickup one"), false);
+                        mouseStack = playerItems.get(hoveredSlot);
+                    } else if (button == 1) {
+                        //pickup half
+                        client.player.sendMessage(new LiteralText("pickup half"), false);
+                        mouseStack = playerItems.get(hoveredSlot);
+                    }
+                } else {
+                    if (button == 0) {
+                        if (isDoubleClicking) {
+                            //move all towards
+                            client.player.sendMessage(new LiteralText("move all towards"), false);
                         } else {
-                            ItemStack inbetweenie = mouseStack.copy();
-                            mouseStack = playerItems.get(hoveredSlot);
-                            playerItems.set(hoveredSlot, inbetweenie);
+                            //place all
+                            client.player.sendMessage(new LiteralText("place all"), false);
+                            mouseStack = ItemStack.EMPTY;
                         }
+                    } else if (button == 1) {
+                        //place one
+                        client.player.sendMessage(new LiteralText("place one"), false);
                     }
                 }
             }
-            /*
-
-                            } else {
-                                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
-                                    playerItems.set(hoveredSlot, mouseStack);
-                                    mouseStack = ItemStack.EMPTY;
-                                } else {
-                                    ItemStack inbetweenie = mouseStack.copy();
-                                    mouseStack = playerItems.get(hoveredSlot);
-                                    playerItems.set(hoveredSlot, inbetweenie);
-                                }
-
-
-                                 else {
-                                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
-                                    playerItems.set(hoveredSlot, mouseStack);
-                                    mouseStack = ItemStack.EMPTY;
-                                } else {
-                                    ItemStack inbetweenie = mouseStack.copy();
-                                    mouseStack = playerItems.get(hoveredSlot);
-                                    playerItems.set(hoveredSlot, inbetweenie);
-                                }
-                            }
-             */
         } else if (isMouseOver(mouseX, mouseY, guiX, guiY, guiX + 172, guiY + 24 + rowCount * 18)) { // Handle Minecart Inventory
+            if (hasShiftDown()) {
+                if (button == 0) {
+                    if (isDoubleClicking && !mouseStack.equals(ItemStack.EMPTY)) {
+                        //Move all away
+                        client.player.sendMessage(new LiteralText("move all away"), false);
+                    } else {
+                        //Quick Move hovered Item stack
+                        client.player.sendMessage(new LiteralText("quick move"), false);
 
-
-//            mouseStack
-            MinecartManager.withDrawItemFromMinecartsNew(visibleItems.get(0), 20, 18);
-//            MinecartManager.addTask(new MinecartManager.MoveTask(visibleItems.get(0).containingMinecarts.get(0).minecart, 0, 38, 64));
-        }
-        /*
-        if (mouseStack.equals(ItemStack.EMPTY)) {
-                mouseStack = playerItems.get(hoveredSlot);
-                playerItems.set(hoveredSlot, ItemStack.EMPTY);
+                    }
+                } else if (button == 1) {
+                    //Quick Move hovered Item stack
+                    client.player.sendMessage(new LiteralText("quick move"), false);
+                }
             } else {
-                if (playerItems.get(hoveredSlot).equals(ItemStack.EMPTY)) {
-                    playerItems.set(hoveredSlot, mouseStack);
-                    mouseStack = ItemStack.EMPTY;
+                if (mouseStack.equals(ItemStack.EMPTY)) {
+                    if (button == 0) {
+                        //Pickup one
+                        client.player.sendMessage(new LiteralText("pickup one"), false);
+                    } else if (button == 1) {
+                        //pickup half
+                        client.player.sendMessage(new LiteralText("pickup half"), false);
+                    }
                 } else {
-                    ItemStack inbetweenie = mouseStack.copy();
-                    mouseStack = playerItems.get(hoveredSlot);
-                    playerItems.set(hoveredSlot, inbetweenie);
+                    if (button == 0) {
+                        if (isDoubleClicking) {
+                            //move all towards
+                            client.player.sendMessage(new LiteralText("move all towards"), false);
+                        } else {
+                            //place all
+                            client.player.sendMessage(new LiteralText("place all"), false);
+                        }
+                    } else if (button == 1) {
+                        //place one
+                        client.player.sendMessage(new LiteralText("place one"), false);
+                    }
                 }
             }
-         */
+        }
     }
 
     public boolean charTyped(char chr, int modifiers) {
