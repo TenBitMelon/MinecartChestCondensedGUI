@@ -31,6 +31,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
+import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -83,11 +84,15 @@ public class CondensedItemScreen extends Screen {
     private HoveredInventory lastClickedInventory;
     private int lastClickedButton;
 
+    private boolean draggingItems;
+    private int draggingItemsButton;
+    private final ArrayList<Integer> draggingItemSlots = new ArrayList<>();
+
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<VirtualItemStack> visibleItems = new ArrayList<>();
     public List<ItemStack> playerItems = new ArrayList<>();
 
-    enum HoveredInventory {MINECARTS, PLAYER}
+    enum HoveredInventory {NONE, MINECARTS, PLAYER}
     private HoveredInventory hoveredInventory;
     private int hoveredSlot;
     private ItemStack mouseStack = ItemStack.EMPTY;
@@ -202,6 +207,8 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawPlayerInventory(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        hoveredSlot = -1;
+        hoveredInventory = HoveredInventory.NONE;
         for (int i = 0; i < 36; i++) {
             ItemStack inventoryItem = playerItems.get(i);
             int slotX = this.guiX + 8 + 18*(i % 9);
@@ -217,6 +224,9 @@ public class CondensedItemScreen extends Screen {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
                 hoveredInventory = HoveredInventory.PLAYER;
+            }
+            if (draggingItemSlots.contains(i)) {
+                fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, new Color(255, draggingItemsButton * 255, 0).getRGB(), new Color(255, draggingItemsButton * 255, 0).getRGB(), 200);
             }
         }
     }
@@ -309,8 +319,15 @@ public class CondensedItemScreen extends Screen {
             rowsScrolled = Math.round(scrollPosition * (float)(Math.ceil(visibleItems.size()/9F) - rowCount));
             scrolling = true;
             return true;
+        } else if (hoveredInventory.equals(HoveredInventory.PLAYER) && !mouseStack.isEmpty()) {
+            if (draggingItems) {
+                draggingItemSlots.add(hoveredSlot);
+            } else {
+                draggingItems = true;
+                draggingItemsButton = button;
+            }
         }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+        return false;
     }
 
     @Override
@@ -325,13 +342,19 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         scrolling = false;
         boolean isDoubleClicking = checkForDoubleClick(button);
-        mouseDragged(mouseX, mouseY, button, 0, 0);
-        checkButtons(mouseX, mouseY);
-        checkItems(mouseX, mouseY, button, isDoubleClicking);
+        if (!checkButtons(mouseX, mouseY))
+            checkItems(mouseX, mouseY, button, isDoubleClicking);
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        draggingItems = false;
+        draggingItemSlots.clear();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private boolean checkForDoubleClick(int button) {
@@ -347,7 +370,7 @@ public class CondensedItemScreen extends Screen {
         return isDoubleClicking;
     }
 
-    public void checkButtons(double mouseX, double mouseY) {
+    public boolean checkButtons(double mouseX, double mouseY) {
         if (isMouseOver(mouseX, mouseY, guiX - 18, guiY + 8, guiX + 2, guiY + 80)) {
             for (int i = 0; i < 4; i++) {
                 int x = guiX - 18;
@@ -378,17 +401,18 @@ public class CondensedItemScreen extends Screen {
                             search();
                         }
                         case 3 -> { // crafting table
-                                showCraftingTable = !showCraftingTable;
-                                init();
-                            }
+                            showCraftingTable = !showCraftingTable;
+                            init();
+                        }
                     }
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     public void checkItems(double mouseX, double mouseY, int button, boolean isDoubleClicking) {
-
         int y = (this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ));
         if (isMouseOver(mouseX, mouseY, this.guiX, y, this.guiX + 176, y + 88)) { // Handle Player Inventory
             if (hasShiftDown()) {
