@@ -1,27 +1,17 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
 import net.minecraft.block.CraftingTableBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.option.LanguageOptionsScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -29,14 +19,10 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class CondensedItemScreen extends Screen {
     private static final Identifier GRID = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
@@ -82,6 +68,7 @@ public class CondensedItemScreen extends Screen {
     private long lastButtonClickTime;
     private int lastClickedSlot;
     private HoveredInventory lastClickedInventory;
+    private ItemStack lastClickedItem = ItemStack.EMPTY;
     private int lastClickedButton;
 
     private boolean draggingItems;
@@ -90,7 +77,8 @@ public class CondensedItemScreen extends Screen {
 
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<VirtualItemStack> visibleItems = new ArrayList<>();
-    public List<ItemStack> playerItems = new ArrayList<>();
+    public List<VirtualItemStack> searchedVisibleItems = new ArrayList<>();
+    public List<ItemStack> visiblePlayerItems = new ArrayList<>();
 
     enum HoveredInventory {NONE, MINECARTS, PLAYER}
     private HoveredInventory hoveredInventory;
@@ -210,7 +198,7 @@ public class CondensedItemScreen extends Screen {
         hoveredSlot = -1;
         hoveredInventory = HoveredInventory.NONE;
         for (int i = 0; i < 36; i++) {
-            ItemStack inventoryItem = playerItems.get(i);
+            ItemStack inventoryItem = visiblePlayerItems.get(i);
             int slotX = this.guiX + 8 + 18*(i % 9);
             int slotY;
             if (i < 27)
@@ -235,15 +223,15 @@ public class CondensedItemScreen extends Screen {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < visibleItems.size()) {
-                ItemStack inventoryItem = visibleItems.get(i + rowsScrolled*9).visualItemStack;
+            if ((i + rowsScrolled*9) < searchedVisibleItems.size()) {
+                ItemStack inventoryItem = searchedVisibleItems.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
                 String amountString;
-                if (visibleItems.get(i + rowsScrolled*9).amount > 999) {
-                    amountString = Float.toString((float)Math.round(((float)(visibleItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
+                if (searchedVisibleItems.get(i + rowsScrolled*9).amount > 999) {
+                    amountString = Float.toString((float)Math.round(((float)(searchedVisibleItems.get(i + rowsScrolled*9).amount)/1000F)*10F)/10F) + "K";
                 } else {
-                    amountString = visibleItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(visibleItems.get(i + rowsScrolled*9).amount);
+                    amountString = searchedVisibleItems.get(i + rowsScrolled*9).amount == 1 ? "" : Integer.toString(searchedVisibleItems.get(i + rowsScrolled*9).amount);
                 }
                 MatrixStack textMatrixStack = new MatrixStack();
                 textMatrixStack.scale(0.5F, 0.5F, 1);
@@ -260,7 +248,7 @@ public class CondensedItemScreen extends Screen {
 
     private void drawPlayerTooltips(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         for (int i = 0; i < 36; i++) {
-            ItemStack inventoryItem = playerItems.get(i);
+            ItemStack inventoryItem = visiblePlayerItems.get(i);
             int slotX = this.guiX + 8 + 18*(i % 9);
             int slotY;
             if (i < 27)
@@ -280,8 +268,8 @@ public class CondensedItemScreen extends Screen {
         for (int i = 0; i < rowCount * 9; i++) {
             int slotX = this.guiX + 8 + 18 * (i % 9);
             int slotY = this.guiY + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < visibleItems.size()) {
-                ItemStack inventoryItem = visibleItems.get(i + rowsScrolled * 9).visualItemStack;
+            if ((i + rowsScrolled*9) < searchedVisibleItems.size()) {
+                ItemStack inventoryItem = searchedVisibleItems.get(i + rowsScrolled * 9).visualItemStack;
                 if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                     if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
                         renderTooltip(matrices, inventoryItem, mouseX, mouseY);
@@ -420,50 +408,151 @@ public class CondensedItemScreen extends Screen {
                     if (isDoubleClicking && !mouseStack.equals(ItemStack.EMPTY)) {
                         //Move all away
                         client.player.sendMessage(new LiteralText("move all away"), false);
+                        int increasingItemIndex = getVirtualItemStackForItem(lastClickedItem);
+                        if (increasingItemIndex == -1) {
+                            visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                            increasingItemIndex = visibleItems.size() - 1;
+                        }
+                        VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
+                        for (int i = 0; i < 36; i++) {
+                            if (ItemStack.canCombine(lastClickedItem, visiblePlayerItems.get(i))) {
+                                increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(i).getCount();
+                                visiblePlayerItems.set(i, ItemStack.EMPTY);
+                            }
+                        }
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     } else {
                         //Quick Move hovered Item stack
                         client.player.sendMessage(new LiteralText("quick move"), false);
-
+                        lastClickedItem = visiblePlayerItems.get(hoveredSlot);
+                        int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
+                        if (increasingItemIndex == -1) {
+                            visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                            increasingItemIndex = visibleItems.size() - 1;
+                        }
+                        VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
+                        increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
+                        visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
                     }
                 } else if (button == 1) {
                     //Quick Move hovered Item stack
                     client.player.sendMessage(new LiteralText("quick move"), false);
+                    int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
+                    if (increasingItemIndex == -1) {
+                        visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                        increasingItemIndex = visibleItems.size() - 1;
+                    }
+                    VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
+                    increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
+                    visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
+                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                        visibleItems.sort(nameComparator);
+                    } else {
+                        visibleItems.sort(quantityComparator);
+                    }
+                    search();
                 }
             } else {
                 if (mouseStack.equals(ItemStack.EMPTY)) {
                     if (button == 0) {
-                        //Pickup one
+                        //Pickup all
                         client.player.sendMessage(new LiteralText("pickup one"), false);
-                        mouseStack = playerItems.get(hoveredSlot);
+                        mouseStack = visiblePlayerItems.get(hoveredSlot);
+                        visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
                     } else if (button == 1) {
                         //pickup half
                         client.player.sendMessage(new LiteralText("pickup half"), false);
-                        mouseStack = playerItems.get(hoveredSlot);
+                        mouseStack = visiblePlayerItems.get(hoveredSlot).copy();
+                        mouseStack.setCount((int)Math.ceil(visiblePlayerItems.get(hoveredSlot).getCount()/2F));
+                        visiblePlayerItems.get(hoveredSlot).setCount(visiblePlayerItems.get(hoveredSlot).getCount()/2);
                     }
                 } else {
                     if (button == 0) {
                         if (isDoubleClicking) {
                             //move all towards
                             client.player.sendMessage(new LiteralText("move all towards"), false);
+                            for (int i = 0; i < 36; i++) {
+                                if (ItemStack.canCombine(mouseStack, visiblePlayerItems.get(i))) {
+                                    if (mouseStack.getMaxCount() <= mouseStack.getCount() + visiblePlayerItems.get(i).getCount()) {
+                                        visiblePlayerItems.get(i).setCount(visiblePlayerItems.get(i).getCount() - (mouseStack.getMaxCount() - mouseStack.getCount()));
+                                        mouseStack.setCount(mouseStack.getMaxCount());
+                                        break;
+                                    }
+                                    mouseStack.setCount(mouseStack.getCount() + visiblePlayerItems.get(i).getCount());
+                                    visiblePlayerItems.set(i, ItemStack.EMPTY);
+                                }
+                            }
+                            if (mouseStack.getCount() < mouseStack.getMaxCount()) {
+                                int decreasingItemIndex = getVirtualItemStackForItem(mouseStack);
+                                if (decreasingItemIndex != -1) {
+                                    VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
+                                    if (decreasingItem.amount > mouseStack.getMaxCount()-mouseStack.getMaxCount()) {
+                                        decreasingItem.amount = decreasingItem.amount - mouseStack.getMaxCount()-mouseStack.getMaxCount();
+                                        mouseStack.setCount(mouseStack.getMaxCount());
+                                    } else {
+                                        mouseStack.setCount(mouseStack.getCount()+decreasingItem.amount);
+                                        visibleItems.remove(decreasingItemIndex);
+                                    }
+                                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                        visibleItems.sort(nameComparator);
+                                    } else {
+                                        visibleItems.sort(quantityComparator);
+                                    }
+                                    search();
+                                }
+                            }
                         } else {
-                            if (ItemStack.canCombine(playerItems.get(hoveredSlot), mouseStack)) {
+                            if (visiblePlayerItems.get(hoveredSlot).isEmpty()) {
                                 //place all
                                 client.player.sendMessage(new LiteralText("place all"), false);
+                                visiblePlayerItems.set(hoveredSlot, mouseStack);
                                 mouseStack = ItemStack.EMPTY;
+                            } else if (ItemStack.canCombine(visiblePlayerItems.get(hoveredSlot), mouseStack)) {
+                                //place all
+                                client.player.sendMessage(new LiteralText("place all"), false);
+                                if (visiblePlayerItems.get(hoveredSlot).getMaxCount() < visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount()) {
+                                    mouseStack.setCount(visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount() - visiblePlayerItems.get(hoveredSlot).getMaxCount());
+                                    visiblePlayerItems.get(hoveredSlot).setCount(visiblePlayerItems.get(hoveredSlot).getMaxCount());
+                                } else {
+                                    visiblePlayerItems.get(hoveredSlot).setCount(visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount());
+                                    mouseStack = ItemStack.EMPTY;
+                                }
                             } else {
                                 //swap
                                 client.player.sendMessage(new LiteralText("swap"), false);
-                                mouseStack = playerItems.get(hoveredSlot);
+                                ItemStack previousMouseStack = mouseStack.copy();
+                                mouseStack = visiblePlayerItems.get(hoveredSlot);
+                                visiblePlayerItems.set(hoveredSlot, previousMouseStack);
                             }
                         }
                     } else if (button == 1) {
-                        if (ItemStack.canCombine(playerItems.get(hoveredSlot), mouseStack)) {
+                        if (ItemStack.canCombine(visiblePlayerItems.get(hoveredSlot), mouseStack)) {
                             //place one
                             client.player.sendMessage(new LiteralText("place one"), false);
+                            if (visiblePlayerItems.get(hoveredSlot).getMaxCount() > visiblePlayerItems.get(hoveredSlot).getCount()) {
+                                visiblePlayerItems.get(hoveredSlot).increment(1);
+                                mouseStack.decrement(1);
+                            }
+                            if (mouseStack.getCount() == 0) {
+                                mouseStack = ItemStack.EMPTY;
+                            }
                         } else {
                             //swap
                             client.player.sendMessage(new LiteralText("swap"), false);
-                            mouseStack = playerItems.get(hoveredSlot);
+                            ItemStack previousMouseStack = mouseStack.copy();
+                            mouseStack = visiblePlayerItems.get(hoveredSlot);
+                            visiblePlayerItems.set(hoveredSlot, previousMouseStack);
                         }
                     }
                 }
@@ -535,15 +624,15 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void search() {
-        visibleItems.clear();
-        for (VirtualItemStack testedStack : items) {
+        searchedVisibleItems.clear();
+        for (VirtualItemStack testedStack : visibleItems) {
             if (searchBox.getText() == "") {
-                visibleItems.add(testedStack.copy());
+                searchedVisibleItems.add(testedStack.copy());
             } else if (Character.toString( searchBox.getText().charAt(0)) == "@") {
-                visibleItems.add(testedStack.copy());
+                searchedVisibleItems.add(testedStack.copy());
             } else {
                 if (testedStack.visualItemStack.getName().getString().toLowerCase().matches(".*\\Q" + searchBox.getText().toLowerCase() + "\\E.*")) {
-                    visibleItems.add(testedStack.copy());
+                    searchedVisibleItems.add(testedStack.copy());
                 }
             }
         }
@@ -573,7 +662,7 @@ public class CondensedItemScreen extends Screen {
         this.guiX = (this.width - this.backgroundWidth + 17) / 2;
 
         for (int i = 0; i < 36; i++) {
-            playerItems.add(ItemStack.EMPTY);
+            visiblePlayerItems.add(ItemStack.EMPTY);
         }
 
         client.keyboard.setRepeatEvents(true);
@@ -591,6 +680,15 @@ public class CondensedItemScreen extends Screen {
             scrollPosition = 0;
             rowsScrolled = 0;
         }
+    }
+
+    private int getVirtualItemStackForItem(ItemStack itemstack) {
+        for (int i = 0; i < visibleItems.size(); i++) {
+            if (ItemStack.canCombine(visibleItems.get(i).visualItemStack, itemstack)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
@@ -621,6 +719,9 @@ public class CondensedItemScreen extends Screen {
             }
             search();
         }
+        visibleItems.clear();
+        visibleItems.addAll(items);
+        search();
     }
 
     public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
@@ -640,6 +741,9 @@ public class CondensedItemScreen extends Screen {
                 }
             }
         }
+        visibleItems.clear();
+        visibleItems.addAll(items);
+        search();
     }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
