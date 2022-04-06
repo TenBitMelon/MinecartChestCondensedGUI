@@ -169,11 +169,11 @@ public class CondensedItemScreen extends Screen {
                 case 5 -> { if (!showCraftingTable) i++; }
             }
             if (isMouseOver(mouseX, mouseY, x, y, guiX - 2, guiY + 24 + (j * 18))){
-                renderTooltip(matrices, new LiteralText(switch (j) {
-                    case 0 -> "Sort Nearby Minecarts"; // Sort Carts
-                    case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "Sorting Ascending" : "Sorting Descending"; // Sort Direction
-                    case 2 -> sortFilter.equals(SortFilter.QUANTITY) ? "Sorting Quantity" : "Sorting Alphabetically"; // Sort Filter
-                    case 3 -> showCraftingTable ? "Showing Crafting Table" : "Hiding Crafting Table"; // Crafting table
+                renderTooltip(matrices, new TranslatableText(switch (j) {
+                    case 0 -> "minecartchestcondensedgui.sortMinecartsButton"; // Sort Carts
+                    case 1 -> sortDirection.equals(SortDirection.ASCENDING) ? "minecartchestcondensedgui.sortItemsAscendingButton" : "minecartchestcondensedgui.sortItemsDescendingButton"; // Sort Direction
+                    case 2 -> sortFilter.equals(SortFilter.QUANTITY) ? "minecartchestcondensedgui.sortItemsQuantityButton" : "minecartchestcondensedgui.sortItemsAlphabeticallyButton"; // Sort Filter minecartchestcondensedgui.sortItemsQuantityButton
+                    case 3 -> showCraftingTable ? "minecartchestcondensedgui.showCraftingTableButton" : "minecartchestcondensedgui.hideCraftingTableButton"; // Crafting table minecartchestcondensedgui.showCraftingTableButton
                     default -> throw new IllegalStateException("Unexpected value: " + j);
                 }), mouseX, mouseY);
             }
@@ -182,8 +182,8 @@ public class CondensedItemScreen extends Screen {
     }
 
     private void drawLabels(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        textRenderer.draw(matrices, "Minecarts", this.guiX + 8, this.guiY + 8, 4210752);
-        textRenderer.draw(matrices, "Inventory", this.guiX + 8, this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ), 4210752);
+        textRenderer.draw(matrices, new TranslatableText("minecartchestcondensedgui.defaultMinecartLabel"), this.guiX + 8, this.guiY + 8, 4210752);
+        textRenderer.draw(matrices, new TranslatableText("container.inventory"), this.guiX + 8, this.guiY + rowCount * 18 + 24 + (showCraftingTable && craftingTableLocation != null ? 56 : 0 ), 4210752);
     }
 
     private void drawSearchBox(MatrixStack matrices, float delta, int mouseX, int mouseY) {
