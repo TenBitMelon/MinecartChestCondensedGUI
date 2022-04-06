@@ -75,6 +75,8 @@ public class CondensedItemScreen extends Screen {
     private int lastClickedButton;
 
     private boolean draggingItems;
+    private boolean beforeDragDragging;
+    private int draggingStartingSlot;
     private int draggingItemsButton;
     private int draggedStackRemainder;
     private final Set<Integer> draggingItemSlots = new HashSet<>();
@@ -327,11 +329,17 @@ public class CondensedItemScreen extends Screen {
                 if (draggingItems) {
                     draggingItemSlots.add(hoveredSlot);
                     calculateSlots();
-                } else {
+                } else if (!beforeDragDragging) {
+                    beforeDragDragging = true;
+                    draggingStartingSlot = hoveredSlot;
+                } else if (draggingStartingSlot != hoveredSlot){
                     draggingItems = true;
+                    draggingItemSlots.add(draggingStartingSlot);
                     draggingItemsButton = button;
                 }
             }
+            System.out.println("draggingItems = " + draggingItems);
+            System.out.println("beforeDragDragging = " + beforeDragDragging);
         }
         return false;
     }
@@ -382,11 +390,7 @@ public class CondensedItemScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         scrolling = false;
-        if (draggingItems && draggingItemsButton != button) {
-            draggingItems = false;
-            draggingItemSlots.clear();
-            return true;
-        } else if (draggingItems && !draggingItemSlots.isEmpty()) {
+        if (draggingItems && !draggingItemSlots.isEmpty()) {
 //            this.client.interactionManager.clickSlot(0, -999, ScreenHandler.packQuickCraftData(0, draggingItemsButton), SlotActionType.QUICK_CRAFT, this.client.player); // Signals that the drag has begun
 
             int itemsPerSlot = 1;
@@ -401,6 +405,7 @@ public class CondensedItemScreen extends Screen {
 
             mouseStack.setCount(draggedStackRemainder);
             draggingItems = false;
+            beforeDragDragging = false;
             draggingItemSlots.clear();
             return true;
 
