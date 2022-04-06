@@ -471,6 +471,11 @@ public class CondensedItemScreen extends Screen {
                             } else {
                                 items.sort(quantityComparator);
                             }
+                            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                visibleItems.sort(nameComparator);
+                            } else {
+                                visibleItems.sort(quantityComparator);
+                            }
                             search();
                         }
                         case 2 -> { // sort filter
@@ -479,6 +484,11 @@ public class CondensedItemScreen extends Screen {
                                 items.sort(nameComparator);
                             } else {
                                 items.sort(quantityComparator);
+                            }
+                            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                visibleItems.sort(nameComparator);
+                            } else {
+                                visibleItems.sort(quantityComparator);
                             }
                             search();
                         }
