@@ -495,7 +495,7 @@ public class CondensedItemScreen extends Screen {
                             if (!lastClickedItem.isEmpty()) {
                                 int increasingItemIndex = getVirtualItemStackForItem(lastClickedItem);
                                 if (increasingItemIndex == -1) {
-                                    visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                    visibleItems.add(new VirtualItemStack(lastClickedItem.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                     increasingItemIndex = visibleItems.size() - 1;
                                 }
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
@@ -519,7 +519,7 @@ public class CondensedItemScreen extends Screen {
                             if (!visiblePlayerItems.get(hoveredSlot).isEmpty()) {
                                 int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
                                 if (increasingItemIndex == -1) {
-                                    visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                    visibleItems.add(new VirtualItemStack(visiblePlayerItems.get(hoveredSlot).copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                     increasingItemIndex = visibleItems.size() - 1;
                                 }
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
@@ -539,7 +539,7 @@ public class CondensedItemScreen extends Screen {
                         if (!visiblePlayerItems.get(hoveredSlot).isEmpty()) {
                             int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
                             if (increasingItemIndex == -1) {
-                                visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                visibleItems.add(new VirtualItemStack(visiblePlayerItems.get(hoveredSlot).copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                 increasingItemIndex = visibleItems.size() - 1;
                             }
                             VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
@@ -573,7 +573,7 @@ public class CondensedItemScreen extends Screen {
                                 //move all towards
                                 client.player.sendMessage(new LiteralText("move all towards"), false);
                                 for (int i = 0; i < 36; i++) {
-                                    if (ItemStack.canCombine(mouseStack, visiblePlayerItems.get(i))) {
+                                    if (ItemStack.canCombine(mouseStack, visiblePlayerItems.get(i)) && visiblePlayerItems.get(i).getCount() < visiblePlayerItems.get(i).getMaxCount()) {
                                         if (mouseStack.getMaxCount() <= mouseStack.getCount() + visiblePlayerItems.get(i).getCount()) {
                                             visiblePlayerItems.get(i).setCount(visiblePlayerItems.get(i).getCount() - (mouseStack.getMaxCount() - mouseStack.getCount()));
                                             mouseStack.setCount(mouseStack.getMaxCount());
@@ -581,6 +581,15 @@ public class CondensedItemScreen extends Screen {
                                         }
                                         mouseStack.setCount(mouseStack.getCount() + visiblePlayerItems.get(i).getCount());
                                         visiblePlayerItems.set(i, ItemStack.EMPTY);
+                                    }
+                                }
+                                if (mouseStack.getCount() < mouseStack.getMaxCount()) {
+                                    for (int i = 0; i < 36; i++) {
+                                        if (ItemStack.canCombine(mouseStack, visiblePlayerItems.get(i))) {
+                                            visiblePlayerItems.get(i).setCount(visiblePlayerItems.get(i).getCount() - (mouseStack.getMaxCount() - mouseStack.getCount()));
+                                            mouseStack.setCount(mouseStack.getMaxCount());
+                                            break;
+                                        }
                                     }
                                 }
                                 if (mouseStack.getCount() < mouseStack.getMaxCount()) {
@@ -790,7 +799,7 @@ public class CondensedItemScreen extends Screen {
                         }
                     }
                 } else {
-                    if (mouseStack.equals(ItemStack.EMPTY)) {
+                    if (mouseStack.isEmpty()) {
                         if (button == 0) {
                             //Pickup all
                             client.player.sendMessage(new LiteralText("pickup all"), false);
@@ -847,7 +856,7 @@ public class CondensedItemScreen extends Screen {
                                 client.player.sendMessage(new LiteralText("move all towards"), false);
                                 int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                                 if (increasingItemIndex == -1) {
-                                    visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                    visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                     increasingItemIndex = visibleItems.size() - 1;
                                 }
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
@@ -862,18 +871,22 @@ public class CondensedItemScreen extends Screen {
                                         visiblePlayerItems.set(i, ItemStack.EMPTY);
                                     }
                                 }
-                                if (sortFilter == SortFilter.ALPHABETICALLY) {
-                                    visibleItems.sort(nameComparator);
+                                if (increasingItem.amount == 0) {
+                                    visibleItems.remove(increasingItemIndex);
                                 } else {
-                                    visibleItems.sort(quantityComparator);
+                                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                        visibleItems.sort(nameComparator);
+                                    } else {
+                                        visibleItems.sort(quantityComparator);
+                                    }
+                                    search();
                                 }
-                                search();
                             } else {
                                 //place all
                                 client.player.sendMessage(new LiteralText("place all"), false);
                                 int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                                 if (increasingItemIndex == -1) {
-                                    visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                    visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                     increasingItemIndex = visibleItems.size() - 1;
                                 }
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
@@ -891,7 +904,7 @@ public class CondensedItemScreen extends Screen {
                             client.player.sendMessage(new LiteralText("place one"), false);
                             int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                             if (increasingItemIndex == -1) {
-                                visibleItems.add(new VirtualItemStack(lastClickedItem, 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                                visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
                                 increasingItemIndex = visibleItems.size() - 1;
                             }
                             VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
