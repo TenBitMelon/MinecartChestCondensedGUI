@@ -481,6 +481,11 @@ public class CondensedItemScreen extends Screen {
                                         visiblePlayerItems.set(i, ItemStack.EMPTY);
                                     }
                                 }
+                                if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                    visibleItems.sort(nameComparator);
+                                } else {
+                                    visibleItems.sort(quantityComparator);
+                                }
                                 search();
                             }
                         } else {
@@ -496,6 +501,11 @@ public class CondensedItemScreen extends Screen {
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
                                 increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
                                 visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
+                                if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                    visibleItems.sort(nameComparator);
+                                } else {
+                                    visibleItems.sort(quantityComparator);
+                                }
                                 search();
                             }
                         }
@@ -511,6 +521,11 @@ public class CondensedItemScreen extends Screen {
                             VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
                             increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
                             visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
+                            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                                visibleItems.sort(nameComparator);
+                            } else {
+                                visibleItems.sort(quantityComparator);
+                            }
                             search();
                         }
                     }
