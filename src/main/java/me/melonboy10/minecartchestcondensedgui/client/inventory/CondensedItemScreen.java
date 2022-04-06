@@ -14,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -93,7 +94,8 @@ public class CondensedItemScreen extends Screen {
     private HoveredInventory hoveredInventory;
     private int hoveredSlot;
     private ItemStack mouseStack = ItemStack.EMPTY;
-    private boolean itemFromMinecarts = false;
+
+    private List<inventoryAction> inventoryActionQueue = new ArrayList<>();
 
     public CondensedItemScreen() {
         super(new LiteralText("Condensed Minecarts"));
@@ -510,7 +512,7 @@ public class CondensedItemScreen extends Screen {
             if (isMouseOver(mouseX, mouseY, this.guiX, y, this.guiX + 176, y + 88)) { // Handle Player Inventory
                 if (hasShiftDown()) {
                     if (button == 0) {
-                        if (isDoubleClicking && !mouseStack.equals(ItemStack.EMPTY)) {
+                        if (isDoubleClicking && !mouseStack.isEmpty()) {
                             //Move all away
                             client.player.sendMessage(new LiteralText("move all away"), false);
                             if (!lastClickedItem.isEmpty()) {
@@ -522,10 +524,14 @@ public class CondensedItemScreen extends Screen {
                                 VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
                                 for (int i = 0; i < 36; i++) {
                                     if (ItemStack.canCombine(lastClickedItem, visiblePlayerItems.get(i))) {
+
+                                        inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 0, i));
+
                                         increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(i).getCount();
                                         visiblePlayerItems.set(i, ItemStack.EMPTY);
                                     }
                                 }
+
                                 if (sortFilter == SortFilter.ALPHABETICALLY) {
                                     visibleItems.sort(nameComparator);
                                 } else {
@@ -538,6 +544,12 @@ public class CondensedItemScreen extends Screen {
                             client.player.sendMessage(new LiteralText("quick move"), false);
                             lastClickedItem = visiblePlayerItems.get(hoveredSlot);
                             if (!visiblePlayerItems.get(hoveredSlot).isEmpty()) {
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 0, hoveredSlot));
+                                if (mouseStack.isEmpty()) {
+                                    processInventoryActions();
+                                }
+
                                 int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
                                 if (increasingItemIndex == -1) {
                                     visibleItems.add(new VirtualItemStack(visiblePlayerItems.get(hoveredSlot).copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
@@ -558,6 +570,12 @@ public class CondensedItemScreen extends Screen {
                         //Quick Move hovered Item stack
                         client.player.sendMessage(new LiteralText("quick move"), false);
                         if (!visiblePlayerItems.get(hoveredSlot).isEmpty()) {
+
+                            inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 1, hoveredSlot));
+                            if (mouseStack.isEmpty()) {
+                                processInventoryActions();
+                            }
+
                             int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
                             if (increasingItemIndex == -1) {
                                 visibleItems.add(new VirtualItemStack(visiblePlayerItems.get(hoveredSlot).copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
@@ -578,11 +596,17 @@ public class CondensedItemScreen extends Screen {
                     if (mouseStack.isEmpty()) {
                         if (button == 0) {
                             //Pickup all
+
+                            inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP, 0, hoveredSlot));
+
                             client.player.sendMessage(new LiteralText("pickup all"), false);
                             mouseStack = visiblePlayerItems.get(hoveredSlot);
                             visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
                         } else if (button == 1) {
                             //pickup half
+
+                            inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP, 1, hoveredSlot));
+
                             client.player.sendMessage(new LiteralText("pickup half"), false);
                             mouseStack = visiblePlayerItems.get(hoveredSlot).copy();
                             mouseStack.setCount((int) Math.ceil(visiblePlayerItems.get(hoveredSlot).getCount() / 2F));
@@ -592,6 +616,9 @@ public class CondensedItemScreen extends Screen {
                         if (button == 0) {
                             if (isDoubleClicking) {
                                 //move all towards
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP_ALL, 0, hoveredSlot));
+
                                 client.player.sendMessage(new LiteralText("move all towards"), false);
                                 for (int i = 0; i < 36; i++) {
                                     if (ItemStack.canCombine(mouseStack, visiblePlayerItems.get(i)) && visiblePlayerItems.get(i).getCount() < visiblePlayerItems.get(i).getMaxCount()) {
@@ -635,11 +662,18 @@ public class CondensedItemScreen extends Screen {
                             } else {
                                 if (visiblePlayerItems.get(hoveredSlot).isEmpty()) {
                                     //place all
+
+                                    inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 0, hoveredSlot));
+                                    processInventoryActions();
+
                                     client.player.sendMessage(new LiteralText("place all"), false);
                                     visiblePlayerItems.set(hoveredSlot, mouseStack);
                                     mouseStack = ItemStack.EMPTY;
                                 } else if (ItemStack.canCombine(visiblePlayerItems.get(hoveredSlot), mouseStack)) {
                                     //place all
+
+                                    inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 0, hoveredSlot));
+
                                     client.player.sendMessage(new LiteralText("place all"), false);
                                     if (visiblePlayerItems.get(hoveredSlot).getMaxCount() < visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount()) {
                                         mouseStack.setCount(visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount() - visiblePlayerItems.get(hoveredSlot).getMaxCount());
@@ -647,9 +681,14 @@ public class CondensedItemScreen extends Screen {
                                     } else {
                                         visiblePlayerItems.get(hoveredSlot).setCount(visiblePlayerItems.get(hoveredSlot).getCount() + mouseStack.getCount());
                                         mouseStack = ItemStack.EMPTY;
+
+                                        processInventoryActions();
                                     }
                                 } else {
                                     //swap
+
+                                    inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 0, hoveredSlot));
+
                                     client.player.sendMessage(new LiteralText("swap"), false);
                                     ItemStack previousMouseStack = mouseStack.copy();
                                     mouseStack = visiblePlayerItems.get(hoveredSlot);
@@ -659,15 +698,23 @@ public class CondensedItemScreen extends Screen {
                         } else if (button == 1) {
                             if (visiblePlayerItems.get(hoveredSlot).isEmpty()) {
                                 //place one
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 1, hoveredSlot));
+
                                 client.player.sendMessage(new LiteralText("place one"), false);
                                 visiblePlayerItems.set(hoveredSlot, mouseStack.copy());
                                 visiblePlayerItems.get(hoveredSlot).setCount(1);
                                 mouseStack.decrement(1);
                                 if (mouseStack.getCount() == 0) {
                                     mouseStack = ItemStack.EMPTY;
+
+                                    processInventoryActions();
                                 }
                             } else if (ItemStack.canCombine(visiblePlayerItems.get(hoveredSlot), mouseStack)) {
                                 //place one
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 1, hoveredSlot));
+
                                 client.player.sendMessage(new LiteralText("place one"), false);
                                 if (visiblePlayerItems.get(hoveredSlot).getMaxCount() > visiblePlayerItems.get(hoveredSlot).getCount()) {
                                     visiblePlayerItems.get(hoveredSlot).increment(1);
@@ -675,9 +722,14 @@ public class CondensedItemScreen extends Screen {
                                 }
                                 if (mouseStack.getCount() == 0) {
                                     mouseStack = ItemStack.EMPTY;
+
+                                    processInventoryActions();
                                 }
                             } else {
                                 //swap
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 1, hoveredSlot));
+
                                 client.player.sendMessage(new LiteralText("swap"), false);
                                 ItemStack previousMouseStack = mouseStack.copy();
                                 mouseStack = visiblePlayerItems.get(hoveredSlot);
@@ -1185,6 +1237,61 @@ public class CondensedItemScreen extends Screen {
             }
         }
     };
+
+    private class inventoryAction {
+        SlotActionType type;
+        int button;
+        boolean isMinecartSlot;
+        VirtualItemStack minecartItem;
+        int playerInventorySlot;
+
+        String itemString; //TEMPORARY (for debug)
+        public inventoryAction(SlotActionType type, int button, int playerInventorySlot) {
+            isMinecartSlot = false;
+            this.type = type;
+            this.button = button;
+            this.playerInventorySlot = playerInventorySlot;
+            this.itemString = visiblePlayerItems.get(this.playerInventorySlot).toString(); //TEMPORARY (for debug)
+        }
+        public inventoryAction(SlotActionType type, int button, VirtualItemStack minecartItem) {
+            isMinecartSlot = true;
+            this.type = type;
+            this.button = button;
+            this.minecartItem = minecartItem;
+            this.itemString = this.minecartItem.visualItemStack.getItem().toString(); //TEMPORARY (for debug)
+        }
+    }
+
+    private void processInventoryActions() {
+        for (int i = inventoryActionQueue.size(); i > 0; i--) {
+            inventoryAction currentAction = inventoryActionQueue.get(0);
+            String actionText = "";
+            if (currentAction.button == 0) {
+                actionText = switch (currentAction.type) {
+                    case PICKUP -> "Pickup";
+                    case QUICK_MOVE -> "Quick Move";
+                    case SWAP -> "Swap";
+                    case CLONE -> "CLONE";
+                    case THROW -> "THROW";
+                    case QUICK_CRAFT -> "QUICK_CRAFT";
+                    case PICKUP_ALL -> "Move all towards";
+                };
+            } else if (currentAction.button == 1) {
+                actionText = switch (currentAction.type) {
+                    case PICKUP -> "Pickup half";
+                    case QUICK_MOVE -> "Quick Move";
+                    case SWAP -> "Swap";
+                    case CLONE -> "CLONE";
+                    case THROW -> "THROW";
+                    case QUICK_CRAFT -> "QUICK_CRAFT";
+                    case PICKUP_ALL -> "PICKUP_ALL";
+                };
+            }
+            actionText = actionText + " " + currentAction.itemString;
+            client.player.sendMessage(new LiteralText(actionText), false);
+            inventoryActionQueue.remove(0);
+        }
+    }
 
     @Override
     public boolean isPauseScreen() { return false; }
