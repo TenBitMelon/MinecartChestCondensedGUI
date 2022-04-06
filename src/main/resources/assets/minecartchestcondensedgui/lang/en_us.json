@@ -1,4 +1,12 @@
 {
   "minecartcondensedgui": "Minecart Condensed GUI",
-  "key.minecartchestcondensedgui.openmenu": "Open Condensed GUI"
+  "key.minecartchestcondensedgui.openmenu": "Open Condensed GUI",
+  "minecartchestcondensedgui.defaultMinecartLabel": "Minecarts",
+  "minecartchestcondensedgui.sortMinecartsButton": "Sort Nearby Minecarts",
+  "minecartchestcondensedgui.sortItemsAscendingButton": "Sorting Ascending",
+  "minecartchestcondensedgui.sortItemsDescendingButton": "Sorting Descending",
+  "minecartchestcondensedgui.sortItemsQuantityButton": "Sorting Quantity",
+  "minecartchestcondensedgui.sortItemsAlphabeticallyButton": "Sorting Alphabetically",
+  "minecartchestcondensedgui.showCraftingTableButton": "Showing Crafting Table",
+  "minecartchestcondensedgui.hideCraftingTableButton": "Hiding Crafting Table"
 }
