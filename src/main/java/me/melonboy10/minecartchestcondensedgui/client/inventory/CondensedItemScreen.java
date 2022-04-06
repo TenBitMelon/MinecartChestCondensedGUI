@@ -319,27 +319,29 @@ public class CondensedItemScreen extends Screen {
             scrolling = true;
             return true;
         } else if (hoveredInventory.equals(HoveredInventory.PLAYER)) {
-            if (hoveredSlot > -1
-                && button < 3
-                && !mouseStack.isEmpty()
-                && (mouseStack.getCount() > this.draggingItemSlots.size())
-                && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR
-                || ItemStack.canCombine(mouseStack, visiblePlayerItems.get(hoveredSlot)))
-                && visiblePlayerItems.get(hoveredSlot).getCount() < visiblePlayerItems.get(hoveredSlot).getMaxCount()) {
-                if (draggingItems) {
-                    draggingItemSlots.add(hoveredSlot);
-                    calculateSlots();
-                } else if (!beforeDragDragging) {
-                    beforeDragDragging = true;
-                    draggingStartingSlot = hoveredSlot;
-                } else if (draggingStartingSlot != hoveredSlot){
-                    draggingItems = true;
-                    draggingItemSlots.add(draggingStartingSlot);
-                    draggingItemsButton = button;
+            if (hoveredSlot > -1 && button < 3) {
+                if (hasShiftDown()) {
+//                    int slot = ((mouseX - this.width)/16) + 9*((mouseY - number + 16*rowCount + (showCraftingTable ? number : 0))/16);
+                } else if (!mouseStack.isEmpty()
+                        && (mouseStack.getCount() > this.draggingItemSlots.size())
+                        && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR
+                        || ItemStack.canCombine(mouseStack, visiblePlayerItems.get(hoveredSlot)))
+                        && visiblePlayerItems.get(hoveredSlot).getCount() < visiblePlayerItems.get(hoveredSlot).getMaxCount()) {
+                    if (draggingItems) {
+                        draggingItemSlots.add(hoveredSlot);
+                        calculateSlots();
+                    } else if (!beforeDragDragging) {
+                        beforeDragDragging = true;
+                        draggingStartingSlot = hoveredSlot;
+                    } else if (draggingStartingSlot != hoveredSlot) {
+                        draggingItems = true;
+                        draggingItemSlots.add(draggingStartingSlot);
+                        draggingItemsButton = button;
+                    }
                 }
+                System.out.println("draggingItems = " + draggingItems);
+                System.out.println("beforeDragDragging = " + beforeDragDragging);
             }
-            System.out.println("draggingItems = " + draggingItems);
-            System.out.println("beforeDragDragging = " + beforeDragDragging);
         }
         return false;
     }
