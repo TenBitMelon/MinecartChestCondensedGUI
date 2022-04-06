@@ -74,6 +74,8 @@ public class CondensedItemScreen extends Screen {
     private ItemStack lastClickedItem = ItemStack.EMPTY;
     private int lastClickedButton;
 
+    private boolean hasMouseDown;
+
     private boolean draggingItems;
     private boolean beforeDragDragging;
     private int draggingStartingSlot;
@@ -270,7 +272,7 @@ public class CondensedItemScreen extends Screen {
                 slotY = this.guiY + rowCount * 18 + 94;
             if (showCraftingTable && craftingTableLocation != null) slotY += 56;
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
-                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY) {
+                if (mouseStack == ItemStack.EMPTY && inventoryItem != ItemStack.EMPTY && !(hasShiftDown() && hasMouseDown)) {
                     renderTooltip(matrices, inventoryItem, mouseX, mouseY);
                 }
             }
@@ -321,7 +323,22 @@ public class CondensedItemScreen extends Screen {
         } else if (hoveredInventory.equals(HoveredInventory.PLAYER)) {
             if (hoveredSlot > -1 && button < 3) {
                 if (hasShiftDown()) {
-//                    int slot = ((mouseX - this.width)/16) + 9*((mouseY - number + 16*rowCount + (showCraftingTable ? number : 0))/16);
+                    if (!visiblePlayerItems.get(hoveredSlot).isEmpty()) {
+                        int increasingItemIndex = getVirtualItemStackForItem(visiblePlayerItems.get(hoveredSlot));
+                        if (increasingItemIndex == -1) {
+                            visibleItems.add(new VirtualItemStack(visiblePlayerItems.get(hoveredSlot).copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
+                            increasingItemIndex = visibleItems.size() - 1;
+                        }
+                        VirtualItemStack increasingItem = visibleItems.get(increasingItemIndex);
+                        increasingItem.amount = increasingItem.amount + visiblePlayerItems.get(hoveredSlot).getCount();
+                        visiblePlayerItems.set(hoveredSlot, ItemStack.EMPTY);
+                        if (sortFilter == SortFilter.ALPHABETICALLY) {
+                            visibleItems.sort(nameComparator);
+                        } else {
+                            visibleItems.sort(quantityComparator);
+                        }
+                        search();
+                    }
                 } else if (!mouseStack.isEmpty()
                         && (mouseStack.getCount() > this.draggingItemSlots.size())
                         && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR
@@ -386,11 +403,13 @@ public class CondensedItemScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        hasMouseDown = true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        hasMouseDown = false;
         scrolling = false;
         if (draggingItems && !draggingItemSlots.isEmpty()) {
 //            this.client.interactionManager.clickSlot(0, -999, ScreenHandler.packQuickCraftData(0, draggingItemsButton), SlotActionType.QUICK_CRAFT, this.client.player); // Signals that the drag has begun
