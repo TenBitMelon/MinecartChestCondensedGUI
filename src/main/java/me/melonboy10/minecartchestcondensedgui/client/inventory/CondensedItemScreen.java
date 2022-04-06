@@ -211,14 +211,18 @@ public class CondensedItemScreen extends Screen {
                 slotY = this.guiY + rowCount * 18 + 94;
             if (showCraftingTable && craftingTableLocation != null) slotY += 56;
 
-            if (draggingItems && draggingItemSlots.contains(i) && draggingItemSlots.size() > 1) {
+            this.itemRenderer.zOffset = 100.0F;
+            if (draggingItemsPerSlot.get(i) > 0 && draggingItemSlots.contains(i)) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
-//                itemRenderer.renderInGui(mouseStack, slotX, slotY);
-//                itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, slotX, slotY, String.valueOf(draggingItemsPerSlot.get(i) + visiblePlayerItems.get(i).getCount()));
+                int amount = inventoryItem.getCount() + draggingItemsPerSlot.get(i);
+                itemRenderer.renderInGui(mouseStack, slotX, slotY);
+                itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, slotX, slotY, amount <= 1 ? "" : Integer.toString(amount));
             } else {
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() <= 1 ? "" : Integer.toString(inventoryItem.getCount()));
             }
+            this.itemRenderer.zOffset = 0.0F;
+
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
