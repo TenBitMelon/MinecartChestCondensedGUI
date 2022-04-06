@@ -78,6 +78,7 @@ public class CondensedItemScreen extends Screen {
     private int draggingItemsButton;
     private int draggedStackRemainder;
     private final Set<Integer> draggingItemSlots = new HashSet<>();
+    private final ArrayList<Integer> draggingItemsPerSlot = new ArrayList<>(Collections.nCopies(36, 0));
 
     public List<VirtualItemStack> items = new ArrayList<>();
     public List<VirtualItemStack> visibleItems = new ArrayList<>();
@@ -209,24 +210,15 @@ public class CondensedItemScreen extends Screen {
             else
                 slotY = this.guiY + rowCount * 18 + 94;
             if (showCraftingTable && craftingTableLocation != null) slotY += 56;
-            String slotCount = inventoryItem.getCount() <= 1 ? "" : Integer.toString(inventoryItem.getCount());
-            if (draggingItems && draggingItemSlots.contains(i) && draggingItemSlots.size() > 1) {
-                if (canInsertItemIntoSlot(visiblePlayerItems.get(i), mouseStack, true)) {
-                    ItemStack mouseCopy = mouseStack.copy();
-                    calculateStackSize(draggingItemSlots, draggingItemsButton, mouseCopy, visiblePlayerItems.get(i).isEmpty() ? 0 : visiblePlayerItems.get(i).getCount());
-                    int k2 = Math.min(mouseCopy.getMaxCount(), visiblePlayerItems.get(i).getMaxCount());
-                    if (mouseCopy.getCount() > k2) {
-                        slotCount = Formatting.YELLOW.toString() + k2;
-                        mouseCopy.setCount(k2);
-                    }
-                }
 
+            if (draggingItems && draggingItemSlots.contains(i) && draggingItemSlots.size() > 1) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
 //                itemRenderer.renderInGui(mouseStack, slotX, slotY);
-//                itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack.copy(), slotX, slotY, String.valueOf(draggingItemsButton == 1 ? visiblePlayerItems.get(i).getCount() + 1 : Math.min(64, visiblePlayerItems.get(i).getCount() + (int) (mouseStack.getCount() / draggingItemSlots.size()))));
+//                itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, slotX, slotY, String.valueOf(draggingItemsPerSlot.get(i) + visiblePlayerItems.get(i).getCount()));
+            } else {
+                itemRenderer.renderInGui(inventoryItem, slotX, slotY);
+                itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, inventoryItem.getCount() <= 1 ? "" : Integer.toString(inventoryItem.getCount()));
             }
-            itemRenderer.renderInGui(inventoryItem, slotX, slotY);
-            itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, slotCount);
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <=  slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
@@ -296,6 +288,7 @@ public class CondensedItemScreen extends Screen {
 
 
     private void drawMouseStack(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        if (draggingItems && draggedStackRemainder < 1) return;
         this.itemRenderer.zOffset = 200.0F;
         itemRenderer.renderInGuiWithOverrides(mouseStack, (mouseX - 8), (mouseY - 8));
         itemRenderer.renderGuiItemOverlay(this.textRenderer, mouseStack, (mouseX - 8), (mouseY - 8), mouseStack.getCount() == 1 ? "" : draggingItems ? String.valueOf(draggedStackRemainder) : String.valueOf(mouseStack.getCount()));
@@ -324,10 +317,12 @@ public class CondensedItemScreen extends Screen {
                 && button < 3
                 && !mouseStack.isEmpty()
                 && (mouseStack.getCount() > this.draggingItemSlots.size())
-                && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR || ItemStack.canCombine(mouseStack, visiblePlayerItems.get(hoveredSlot)))) {
+                && (visiblePlayerItems.get(hoveredSlot).getItem() == Items.AIR
+                || ItemStack.canCombine(mouseStack, visiblePlayerItems.get(hoveredSlot)))
+                && visiblePlayerItems.get(hoveredSlot).getCount() < visiblePlayerItems.get(hoveredSlot).getMaxCount()) {
                 if (draggingItems) {
                     draggingItemSlots.add(hoveredSlot);
-                    calculateRemainder();
+                    calculateSlots();
                 } else {
                     draggingItems = true;
                     draggingItemsButton = button;
@@ -337,46 +332,32 @@ public class CondensedItemScreen extends Screen {
         return false;
     }
 
-    public void calculateRemainder() {
-        ItemStack itemStack = mouseStack;
-        if (itemStack.isEmpty() || !draggingItems) {
-            return;
-        }
-        this.draggedStackRemainder = itemStack.getCount();
-        for (int slot : draggingItemSlots) {
-            ItemStack itemStack2 = itemStack.copy();
-            ItemStack itemStack3 = visiblePlayerItems.get(slot);
-            int i = itemStack3.isEmpty() ? 0 : itemStack3.getCount();
-            calculateStackSize(draggingItemSlots, draggingItemsButton, itemStack2, i);
-            int j = Math.min(itemStack2.getMaxCount(), visiblePlayerItems.get(slot).getMaxCount());
-            if (itemStack2.getCount() > j) {
-                itemStack2.setCount(j);
+    public void calculateSlots() {
+        if (draggingItemsButton == 1) {
+            draggedStackRemainder = mouseStack.getCount() - draggingItemSlots.size();
+            draggingItemsPerSlot.clear();
+            draggingItemsPerSlot.addAll(Collections.nCopies(36, 1));
+        } else {
+            int amountDivided = mouseStack.getCount();
+            int itemsPerSlot = amountDivided / draggingItemSlots.size();
+            int maxedSlots = 0;
+
+            for (int slot : draggingItemSlots) {
+                final ItemStack itemStack = visiblePlayerItems.get(slot);
+                if (itemStack.getCount() + itemsPerSlot > itemStack.getMaxCount()) {
+                    maxedSlots++;
+                    amountDivided -= itemsPerSlot - itemStack.getCount();
+                    itemsPerSlot = (amountDivided) / (draggingItemsPerSlot.size() - maxedSlots);
+                }
             }
-            this.draggedStackRemainder -= itemStack2.getCount() - i;
-        }
-//        System.out.println(draggingItemsButton);
-//        if (draggingItemsButton == 1) {
-//            draggedStackRemainder = mouseStack.getCount() - draggingItemSlots.size();
-//        } else {
-//            draggedStackRemainder = mouseStack.getCount() % draggingItemSlots.size();
-//        }
-    }
 
-    public static boolean canInsertItemIntoSlot(@Nullable ItemStack slot, ItemStack stack, boolean allowOverflow) {
-        boolean bl = slot == null || !slot.isEmpty();
-        if (!bl && ItemStack.canCombine(stack, slot)) {
-            return slot.getCount() + (allowOverflow ? 0 : stack.getCount()) <= stack.getMaxCount();
+            draggingItemsPerSlot.clear();
+            draggingItemsPerSlot.addAll(Collections.nCopies(36, 0));
+            for (int slot : draggingItemSlots) {
+                draggingItemsPerSlot.set(slot, itemsPerSlot);
+            }
+            draggedStackRemainder = amountDivided % draggingItemSlots.size() - maxedSlots;
         }
-        return bl;
-    }
-
-    public static void calculateStackSize(Set<Integer> slots, int mode, ItemStack stack, int stackSize) {
-        switch (mode) {
-            case 0 -> stack.setCount(MathHelper.floor((float) stack.getCount() / (float) slots.size()));
-            case 1 -> stack.setCount(1);
-            case 2 -> stack.setCount(stack.getItem().getMaxCount());
-        }
-        stack.increment(stackSize);
     }
 
     @Override
