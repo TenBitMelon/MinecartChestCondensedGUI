@@ -1,6 +1,7 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
 import net.minecraft.block.CraftingTableBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -750,6 +751,9 @@ public class CondensedItemScreen extends Screen {
                                 for (int i = 0; i < 36; i++) {
                                     int playerInventorySlot = 35 - i;
                                     if (visiblePlayerItems.get(playerInventorySlot).isEmpty()) {
+
+                                        inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 0, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                                         if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
                                             ItemStack newItemStack = decreasingItem.visualItemStack.copy();
                                             newItemStack.setCount(newItemStack.getMaxCount());
@@ -764,6 +768,9 @@ public class CondensedItemScreen extends Screen {
                                             break;
                                         }
                                     } else if (ItemStack.canCombine(decreasingItem.visualItemStack, visiblePlayerItems.get(playerInventorySlot))) {
+
+                                        inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 0, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                                         if (decreasingItem.amount > visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount()) {
                                             decreasingItem.amount = decreasingItem.amount - (visiblePlayerItems.get(playerInventorySlot).getMaxCount() - visiblePlayerItems.get(playerInventorySlot).getCount());
                                             visiblePlayerItems.get(playerInventorySlot).setCount(visiblePlayerItems.get(playerInventorySlot).getMaxCount());
@@ -781,6 +788,9 @@ public class CondensedItemScreen extends Screen {
                             //Quick Move hovered Item stack
                             client.player.sendMessage(new LiteralText("quick move"), false);
                             if (searchedVisibleItems.size() > hoveredSlot + rowsScrolled * 9 && searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).amount > 0) {
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 0, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                                 int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack);
                                 VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
                                 int itemsToTransfer = decreasingItem.visualItemStack.getMaxCount();
@@ -822,12 +832,18 @@ public class CondensedItemScreen extends Screen {
                                         break;
                                     }
                                 }
+                                if (mouseStack.isEmpty()) {
+                                    processInventoryActions();
+                                }
                             }
                         }
                     } else if (button == 1) {
                         //Quick Move hovered Item stack
                         client.player.sendMessage(new LiteralText("quick move"), false);
                         if (searchedVisibleItems.size() > hoveredSlot + rowsScrolled * 9 && searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).amount > 0) {
+
+                            inventoryActionQueue.add(new inventoryAction(SlotActionType.QUICK_MOVE, 1, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                             int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack);
                             VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
                             int itemsToTransfer = decreasingItem.visualItemStack.getMaxCount();
@@ -869,6 +885,9 @@ public class CondensedItemScreen extends Screen {
                                     break;
                                 }
                             }
+                            if (mouseStack.isEmpty()) {
+                                processInventoryActions();
+                            }
                         }
                     }
                 } else {
@@ -877,6 +896,9 @@ public class CondensedItemScreen extends Screen {
                             //Pickup all
                             client.player.sendMessage(new LiteralText("pickup all"), false);
                             if (searchedVisibleItems.size() > hoveredSlot + rowsScrolled * 9) {
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP, 0, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                                 int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack);
                                 VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
                                 if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
@@ -901,6 +923,9 @@ public class CondensedItemScreen extends Screen {
                             //pickup half
                             client.player.sendMessage(new LiteralText("pickup half"), false);
                             if (searchedVisibleItems.size() > hoveredSlot + rowsScrolled * 9) {
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP, 1, items.get(getRealVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack))));
+
                                 int decreasingItemIndex = getVirtualItemStackForItem(searchedVisibleItems.get(hoveredSlot + rowsScrolled * 9).visualItemStack);
                                 VirtualItemStack decreasingItem = visibleItems.get(decreasingItemIndex);
                                 if (decreasingItem.amount > decreasingItem.visualItemStack.getMaxCount()) {
@@ -931,6 +956,9 @@ public class CondensedItemScreen extends Screen {
                             if (isDoubleClicking) {
                                 //move all towards
                                 client.player.sendMessage(new LiteralText("move all towards"), false);
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.PICKUP_ALL, 0, items.get(getRealVirtualItemStackForItem(mouseStack))));
+
                                 int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                                 if (increasingItemIndex == -1) {
                                     visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
@@ -961,6 +989,10 @@ public class CondensedItemScreen extends Screen {
                             } else {
                                 //place all
                                 client.player.sendMessage(new LiteralText("place all"), false);
+
+                                inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 0, items.get(getRealVirtualItemStackForItem(mouseStack))));
+                                processInventoryActions();
+
                                 int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                                 if (increasingItemIndex == -1) {
                                     visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
@@ -979,6 +1011,10 @@ public class CondensedItemScreen extends Screen {
                         } else if (button == 1) {
                             //place one
                             client.player.sendMessage(new LiteralText("place one"), false);
+
+                            inventoryActionQueue.add(new inventoryAction(SlotActionType.SWAP, 1, items.get(getRealVirtualItemStackForItem(mouseStack))));
+                            processInventoryActions();
+
                             int increasingItemIndex = getVirtualItemStackForItem(mouseStack);
                             if (increasingItemIndex == -1) {
                                 visibleItems.add(new VirtualItemStack(mouseStack.copy(), 0, new ArrayList<VirtualItemStack.ItemMinecart>()));
@@ -1123,6 +1159,15 @@ public class CondensedItemScreen extends Screen {
     private int getVirtualItemStackForItem(ItemStack itemstack) {
         for (int i = 0; i < visibleItems.size(); i++) {
             if (ItemStack.canCombine(visibleItems.get(i).visualItemStack, itemstack)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getRealVirtualItemStackForItem(ItemStack itemstack) {
+        for (int i = 0; i < items.size(); i++) {
+            if (ItemStack.canCombine(items.get(i).visualItemStack, itemstack)) {
                 return i;
             }
         }
@@ -1289,6 +1334,48 @@ public class CondensedItemScreen extends Screen {
             }
             actionText = actionText + " " + currentAction.itemString;
             client.player.sendMessage(new LiteralText(actionText), false);
+
+
+            if (currentAction.isMinecartSlot) {
+
+            } else {
+                if (currentAction.button == 0) {
+                    switch (currentAction.type) {
+                        case PICKUP -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case QUICK_MOVE -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case SWAP -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case THROW -> {System.out.println("not yet");}
+                        case QUICK_CRAFT -> {System.out.println("not yet");}
+                        case PICKUP_ALL -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                    };
+                } else {
+                    switch (currentAction.type) {
+                        case PICKUP -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case QUICK_MOVE -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case SWAP -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                        case THROW -> {System.out.println("not yet");}
+                        case QUICK_CRAFT -> {System.out.println("not yet");}
+                        case PICKUP_ALL -> {
+                            client.interactionManager.clickSlot(0, currentAction.playerInventorySlot + 27, currentAction.button, currentAction.type, client.player);
+                        }
+                    };
+                }
+            }
+
             inventoryActionQueue.remove(0);
         }
     }
