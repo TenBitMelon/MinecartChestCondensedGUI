@@ -1,6 +1,5 @@
 package me.melonboy10.minecartchestcondensedgui.client;
 
-import me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemScreen;
 import me.melonboy10.minecartchestcondensedgui.client.inventory.VirtualItemStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
@@ -13,12 +12,14 @@ import net.minecraft.util.Hand;
 import java.util.ArrayList;
 import java.util.List;
 
+import static me.melonboy10.minecartchestcondensedgui.client.MinecartChestCondensedGUIClient.gui;
+
 // SearchTask is responsible for opening and gathering cart contents
 // I is seperate because you need to wait for the gui to open to get the goodies
 public class MinecartManager {
 
     static MinecraftClient client = MinecraftClient.getInstance();
-    static CondensedItemScreen gui = MinecartChestCondensedGUIClient.gui;
+//    static CondensedItemScreen gui = MinecartChestCondensedGUIClient.gui;
 
     static ArrayList<MinecartTask> taskQueue = new ArrayList<>();
     public static MinecartTask currentTask;
@@ -70,7 +71,7 @@ public class MinecartManager {
                     if (taskQueue.size() == 1) {
 
                         if (itemStack.getItem() != Items.AIR) {
-                            gui.visiblePlayerItems.set(i - 27, itemStack);
+//                            gui.visiblePlayerItems.set(i - 27, itemStack);
                             System.out.println(itemStack);
                         }
                         if (i >= 27 && i < 54) {
