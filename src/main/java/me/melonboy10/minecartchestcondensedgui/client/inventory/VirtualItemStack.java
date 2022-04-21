@@ -1,6 +1,5 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
-import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 
@@ -8,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class VirtualItemStack {
+public  class VirtualItemStack {
 
     public ItemStack visualItemStack;
     public int amount;
@@ -59,6 +58,18 @@ public class VirtualItemStack {
             return minecart1.totalAmount - minecart2.totalAmount;
         }
     };
+
+    public boolean isEmpty() {
+        return amount == 0 || visualItemStack.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return "VirtualItemStack{" +
+            "visualItemStack=" + visualItemStack.getItem() +
+            ", amount=" + amount +
+            '}';
+    }
 
     public static class ItemMinecart {
 
