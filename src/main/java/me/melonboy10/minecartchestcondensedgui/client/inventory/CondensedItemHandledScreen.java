@@ -11,7 +11,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.structure.SnowyVillageData;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -59,14 +58,16 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     public static int rowCount; // The amount of rows in the minecart section
 
     public static List<VirtualItemStack> items = new ArrayList<>(); // the total items contined in the combined minecarts
-    public static List<VirtualItemStack> visibleItems = new ArrayList<>(); // the visible items
+    public static List<ItemStack> searchedItems = new ArrayList<>(); // the visible items
 //    public static List<VirtualItemStack> searchedVisibleItems = new ArrayList<>();
     
     private float scrollPosition;
     private boolean scrolling = false;
+    public static int rowsScrolled;
     private TextFieldWidget searchBox;
 
-    private MinecartSlot hoveredSlot;
+
+    int hoveredSlot = -1;
 
     /**
      * Static method for creating a new Screen
@@ -122,10 +123,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 if (sortFilter == SortFilter.ALPHABETICALLY) {
                     items.sort(nameComparator);
-                    visibleItems.sort(nameComparator);
+                    search();
                 } else {
                     items.sort(quantityComparator);
-                    visibleItems.sort(quantityComparator);
+                    search();
                 }
                 search();
             }, "Not sorting up", "Sorting Up", this));
@@ -136,10 +137,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 if (sortFilter == SortFilter.ALPHABETICALLY) {
                     items.sort(nameComparator);
-                    visibleItems.sort(nameComparator);
+                    search();
                 } else {
                     items.sort(quantityComparator);
-                    visibleItems.sort(quantityComparator);
+                    search();
                 }
                 search();
             }, "Filter", "Filtder", this));
@@ -188,7 +189,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, TEXTURE
         );
-        if (rowCount >= Math.ceil(visibleItems.size()/9F)) {
+        if (rowCount >= Math.ceil(searchedItems.size()/9F)) {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
@@ -203,20 +204,20 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 ItemStack inventoryItem = searchedItems.get(i + rowsScrolled*9);
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
-                String amountString = abbreviateAmount(searchedVisibleItems.get(i + rowsScrolled*9).amount);
+                String amountString = abbreviateAmount(searchedItems.get(i + rowsScrolled*9).getCount());
                 MatrixStack textMatrixStack = new MatrixStack();
                 textMatrixStack.scale(0.5F, 0.5F, 1);
                 textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
-                if (searchedVisibleItems.get(i + rowsScrolled*9).amount == 0) {
+                if (searchedItems.get(i + rowsScrolled*9).getCount() == 0) {
                     textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.RED.getColorValue());
                 } else {
                     textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.WHITE.getColorValue());
                 }
             }
+            hoveredSlot = -1;
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
-                hoveredInventory = HoveredInventory.MINECARTS;
             }
         }
     }
@@ -261,6 +262,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             this.scrolling = shouldShowScrollbar();
             return true;
         } else if (hoveredSlot != null && hoveredSlot.hasStack()) {
+            handler.checkForDoubleClick(hoveredSlot.index, button);
             handler.slotClick(hoveredSlot, button);
             return true;
         }
@@ -556,11 +558,6 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
-            if (sortFilter == SortFilter.ALPHABETICALLY) {
-                visibleItems.sort(nameComparator);
-            } else {
-                visibleItems.sort(quantityComparator);
-            }
             search();
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
@@ -585,8 +582,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     private void search() {
         String searchText = searchBox.getText();
         if (searchText.isEmpty()) {
-            visibleItems.clear();
-            visibleItems.addAll(items);
+            searchedItems.clear();
+            for (int i = items.size(); i > 0; i--) {
+
+            }
         } else {
             ArrayList<VirtualItemStack> searchedItems = new ArrayList<>();
             if (searchText.startsWith("#")) {
@@ -610,8 +609,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     }
                 }
             }
-            visibleItems.clear();
-            visibleItems.addAll(searchedItems);
+            CondensedItemHandledScreen.searchedItems.clear();
+            CondensedItemHandledScreen.searchedItems.addAll(searchedItems);
         }
 
         scrollItems(0);
@@ -619,7 +618,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
     public void scrollItems(float position) {
         scrollPosition = position;
-        int rowsScrolled = Math.round(position * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+        rowsScrolled = Math.round(position * (float) (Math.ceil(searchedItems.size() / 9F) - rowCount));
         DefaultedList<MinecartSlot> minecartSlots = handler.minecartSlots;
         for (int i = 0; i < minecartSlots.size(); i++) {
             MinecartSlot minecartSlot = minecartSlots.get(i);
@@ -632,8 +631,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     private int getVirtualItemStackForItem(ItemStack itemstack) {
-        for (int i = 0; i < visibleItems.size(); i++) {
-            if (ItemStack.canCombine(visibleItems.get(i).visualItemStack, itemstack)) {
+        for (int i = 0; i < searchedItems.size(); i++) {
+            if (ItemStack.canCombine(searchedItems.get(i).visualItemStack, itemstack)) {
                 return i;
             }
         }
@@ -668,8 +667,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             }
             //XDsearch();
         }
-        visibleItems.clear();
-        visibleItems.addAll(items);
+        searchedItems.clear();
+        searchedItems.addAll(items);
         //search();
     }
 
@@ -690,8 +689,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 }
             }
         }
-        visibleItems.clear();
-        visibleItems.addAll(items);
+        searchedItems.clear();
+        searchedItems.addAll(items);
         //search();
     }
 

@@ -6,7 +6,11 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.Util;
 import net.minecraft.util.collection.DefaultedList;
+
+import java.util.ArrayList;
 
 import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.*;
 
@@ -14,6 +18,10 @@ public class CondensedItemScreenHandler extends ScreenHandler {
 
     private final ScreenHandler playerScreenHandler = MinecraftClient.getInstance().player.playerScreenHandler;
     public DefaultedList<MinecartSlot> minecartSlots = DefaultedList.of(); // List of the slots for the visual items
+    private boolean isDoubleClicking = false;
+    int lastClickedSlot = -1;
+    int lastClickedButton = 0;
+    long lastButtonClickTime = 600;
 
     protected CondensedItemScreenHandler() {
         super(null, 0);
@@ -28,7 +36,7 @@ public class CondensedItemScreenHandler extends ScreenHandler {
 
         for(int i = 0; i < rowCount; ++i) {
             for(int j = 0; j < 9; ++j) {
-                minecartSlots.add(new MinecartSlot(visibleItems, j + i * 9, 8 + j * 18, 20 + i * 18));
+                minecartSlots.add(new MinecartSlot(searchedItems, j + i * 9, 8 + j * 18, 20 + i * 18));
             }
         }
 
@@ -58,6 +66,17 @@ public class CondensedItemScreenHandler extends ScreenHandler {
 
     public void setCursorStack(ItemStack stack) {
         this.playerScreenHandler.setCursorStack(stack);
+    }
+
+    public void checkForDoubleClick(int hoveredSlot, int button) {
+        long currentTime = Util.getMeasuringTimeMs();
+        boolean isDoubleClicking = (hoveredSlot == lastClickedSlot && lastClickedButton == button && currentTime - lastButtonClickTime < 250L);
+        if (isDoubleClicking) {
+            System.out.println("CONGRATULATIONS! YOU JUST DOUBLE CLICKED!");
+        }
+        lastClickedSlot = hoveredSlot;
+        lastClickedButton = button;
+        lastButtonClickTime = currentTime;
     }
 
     public void slotClick(MinecartSlot hoveredSlot, int button) {
