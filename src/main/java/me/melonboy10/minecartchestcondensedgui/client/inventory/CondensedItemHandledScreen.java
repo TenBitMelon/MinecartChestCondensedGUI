@@ -11,6 +11,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.structure.SnowyVillageData;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -201,7 +202,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             if (this.isPointWithinBounds(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
 //                this.focusedSlot = slot;
                 hoveredSlot = slot;
-                drawSlotHighlight(matrices, x + slot.x, y + slot.y, this.getZOffset());
+                System.out.println(getZOffset());
+                drawSlotHighlight(matrices, x + slot.x, y + slot.y, 1000);
             }
         }
         /*for (int i = 0; i < rowCount * 9; i++) {
@@ -267,6 +269,9 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isMouseOver(mouseX, mouseY, x + 174, y + 20, x + 186, y + 18 + rowCount * 18)) { // is mouse in scroll bar
             this.scrolling = shouldShowScrollbar();
+            return true;
+        } else if (hoveredSlot != null && hoveredSlot.hasStack()) {
+            handler.slotClick(hoveredSlot, button);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);

@@ -5,12 +5,14 @@ import net.minecraft.screen.slot.Slot;
 
 import java.util.List;
 
-public class MinecartSlot extends Slot {
+public class MinecartSlot {
+    public int x, y;
     public int index;
     public final List<VirtualItemStack> items;
 
     public MinecartSlot(List<VirtualItemStack> items, int index, int x, int y) {
-        super(null, index, x, y);
+        this.x = x;
+        this.y = y;
         this.items = items;
         this.index = index;
     }
