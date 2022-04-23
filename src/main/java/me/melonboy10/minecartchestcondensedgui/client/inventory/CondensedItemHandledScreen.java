@@ -1,21 +1,15 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.datafixers.util.Pair;
+import lombok.Getter;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.search.Searchable;
 import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
@@ -26,12 +20,11 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.CallbackI;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScreenHandler> {
+    @Getter private static CondensedItemHandledScreen minecartScreen;
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final Identifier TEXTURE = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");
 
@@ -81,12 +74,14 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
      * @return new CondensedItemHandledScreen
      */
     public static CondensedItemHandledScreen create() {
+        if (minecartScreen != null) return minecartScreen;
         final CondensedItemScreenHandler handler = new CondensedItemScreenHandler();
         return new CondensedItemHandledScreen(handler);
     }
 
     private CondensedItemHandledScreen(CondensedItemScreenHandler handler) {
         super(handler, MinecraftClient.getInstance().player.getInventory(), new LiteralText("Minecarts"));
+        minecartScreen = this;
     }
 
     /**
@@ -199,14 +194,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         hoveredSlot = null;
-        if (!visibleItems.isEmpty()) System.out.println("handler.visibleItems.get(0) = " + visibleItems.get(0));
         for (MinecartSlot slot : handler.minecartSlots) {
-            if (slot.isEnabled()) {
-                RenderSystem.setShader(GameRenderer::getPositionTexShader);
-                this.drawMinecartSlot(matrices, slot);
-            }
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            this.drawMinecartSlot(matrices, slot);
 
-            if (this.isPointWithinBounds(slot.x, slot.y, 16, 16, mouseX, mouseY) && slot.isEnabled()) {
+            if (this.isPointWithinBounds(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
 //                this.focusedSlot = slot;
                 hoveredSlot = slot;
                 drawSlotHighlight(matrices, x + slot.x, y + slot.y, this.getZOffset());
@@ -240,31 +232,19 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     private void drawMinecartSlot(MatrixStack matrices, MinecartSlot slot) {
         VirtualItemStack itemStack = slot.getVirtualStack();
         if (itemStack == null) return;
-        boolean drawBackground = false;
 
         this.setZOffset(100);
         this.itemRenderer.zOffset = 100.0F;
-        if (itemStack.isEmpty() && slot.isEnabled()) {
-            Pair<Identifier, Identifier> k = slot.getBackgroundSprite();
-            if (k != null) {
-                Sprite sprite = client.getSpriteAtlas(k.getFirst()).apply(k.getSecond());
-                RenderSystem.setShaderTexture(0, sprite.getAtlas().getId());
-                drawSprite(matrices, x + slot.x, y + slot.y, this.getZOffset(), 16, 16, sprite);
-                drawBackground = true;
-            }
-        }
 
-        if (!drawBackground) {
-            RenderSystem.enableDepthTest();
-            this.itemRenderer.renderInGuiWithOverrides(client.player, itemStack.visualItemStack, x + slot.x, y + slot.y, slot.x + slot.y * this.backgroundWidth);
-            this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack.visualItemStack, x + slot.x, y + slot.y, " ");
+        RenderSystem.enableDepthTest();
+        this.itemRenderer.renderInGuiWithOverrides(client.player, itemStack.visualItemStack, x + slot.x, y + slot.y, slot.x + slot.y * this.backgroundWidth);
+        this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack.visualItemStack, x + slot.x, y + slot.y, " ");
 
-            String amountString = abbreviateAmount(itemStack.amount);
-            MatrixStack textMatrixStack = new MatrixStack();
-            textMatrixStack.scale(0.5F, 0.5F, 1);
-            textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
-            textRenderer.drawWithShadow(textMatrixStack, amountString, (x + slot.x) * 2 + 31 - textRenderer.getWidth(amountString), (y + slot.y) * 2 + 23, itemStack.amount == 0 ? Formatting.RED.getColorValue() : Formatting.WHITE.getColorValue());
-        }
+        String amountString = abbreviateAmount(itemStack.amount);
+        MatrixStack textMatrixStack = new MatrixStack();
+        textMatrixStack.scale(0.5F, 0.5F, 1);
+        textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
+        textRenderer.drawWithShadow(textMatrixStack, amountString, (x + slot.x) * 2 + 31 - textRenderer.getWidth(amountString), (y + slot.y) * 2 + 23, itemStack.amount == 0 ? Formatting.RED.getColorValue() : Formatting.WHITE.getColorValue());
 
         this.itemRenderer.zOffset = 0.0F;
         this.setZOffset(0);

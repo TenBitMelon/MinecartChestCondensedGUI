@@ -1,7 +1,6 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.melonboy10.minecartchestcondensedgui.client.MinecartManager;
 import net.minecraft.block.CraftingTableBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
