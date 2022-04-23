@@ -148,14 +148,14 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     @Override
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
         this.renderBackground(matrices); // draws rhe transparent black that covers the background
-        super.render(matrices, mouseX, mouseY, delta);
+        this.drawGrid(matrices, delta, mouseX, mouseY);
         this.drawScrollBar(matrices, delta, mouseX, mouseY);
         this.drawMinecartItems(matrices, delta, mouseX, mouseY);
+        super.render(matrices, mouseX, mouseY, delta);
         this.drawMouseoverTooltip(matrices, mouseX, mouseY);
     }
 
-    @Override
-    protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+    protected void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, TEXTURE);
@@ -174,6 +174,9 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     @Override
+    protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {}
+
+        @Override
     protected void drawForeground(MatrixStack matrices, int mouseX, int mouseY) {
         this.textRenderer.draw(matrices, new TranslatableText("minecartchestcondensedgui.defaultMinecartLabel"), 8, 6, 4210752);
         this.textRenderer.draw(matrices, new TranslatableText("container.inventory"), 8, rowCount * 18 + 24, 4210752);
