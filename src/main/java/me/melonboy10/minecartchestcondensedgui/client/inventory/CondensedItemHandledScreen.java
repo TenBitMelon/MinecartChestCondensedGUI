@@ -196,24 +196,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        hoveredSlot = null;
-        for (MinecartSlot slot : handler.minecartSlots) {
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            this.drawMinecartSlot(matrices, slot);
-
-            if (this.isPointWithinBounds(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
-//                this.focusedSlot = slot;
-                hoveredSlot = slot;
-                System.out.println(getZOffset());
-                drawSlotHighlight(matrices, x + slot.x, y + slot.y, 1000);
-            }
-        }
-        /*for (int i = 0; i < rowCount * 9; i++) {
-            int slotX = x + 8 + 18 * (i % 9);
-            int slotY = y + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < searchedVisibleItems.size()) {
-                ItemStack inventoryItem = searchedVisibleItems.get(i + rowsScrolled*9).visualItemStack;
+        for (int i = 0; i < rowCount * 9; i++) {
+            int slotX = this.x + 8 + 18 * (i % 9);
+            int slotY = this.y + 20 + 18 * (i / 9);
+            if ((i + rowsScrolled*9) < searchedItems.size()) {
+                ItemStack inventoryItem = searchedItems.get(i + rowsScrolled*9);
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
                 String amountString = abbreviateAmount(searchedVisibleItems.get(i + rowsScrolled*9).amount);
@@ -231,7 +218,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 hoveredSlot = i;
                 hoveredInventory = HoveredInventory.MINECARTS;
             }
-        }*/
+        }
     }
 
     private void drawMinecartSlot(MatrixStack matrices, MinecartSlot slot) {
@@ -595,7 +582,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         }
     }
 
-    private void search() { // this is only displaying the first item no clue why
+    private void search() {
         String searchText = searchBox.getText();
         if (searchText.isEmpty()) {
             visibleItems.clear();
