@@ -15,12 +15,14 @@ public  class VirtualItemStack {
 
     public VirtualItemStack(ItemStack visualItemStack, ChestMinecartEntity minecart, int slot, int amount) {
         this.visualItemStack = visualItemStack;
+        this.visualItemStack.setCount(amount);
         this.amount = amount;
         containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
     }
 
     public VirtualItemStack(ItemStack visualItemStack, int amount, List<ItemMinecart> containingMinecarts) {
         this.visualItemStack = visualItemStack;
+        this.visualItemStack.setCount(amount);
         this.amount = amount;
         this.containingMinecarts = containingMinecarts;
     }
@@ -37,6 +39,7 @@ public  class VirtualItemStack {
                 newMinecart = false;
                 int previousAmount = itemMinecart.totalAmount;
                 itemMinecart.setItems(slot, amount);
+                this.visualItemStack.setCount(itemMinecart.totalAmount - previousAmount);
                 this.amount += itemMinecart.totalAmount - previousAmount;
                 if (itemMinecart.totalAmount == 0) {
                     containingMinecarts.remove(i);
@@ -47,6 +50,7 @@ public  class VirtualItemStack {
         }
         if (newMinecart) {
             containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
+            this.visualItemStack.setCount(this.visualItemStack.getCount() + amount);
             this.amount += amount;
             containingMinecarts.sort(quantityComparator);
         }
