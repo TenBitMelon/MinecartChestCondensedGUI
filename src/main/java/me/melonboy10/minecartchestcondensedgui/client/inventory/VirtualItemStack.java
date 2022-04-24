@@ -10,7 +10,7 @@ import java.util.List;
 public  class VirtualItemStack {
 
     public ItemStack visualItemStack;
-    public int amount;
+    public int amount; // remove because only used by old screen
     public List<ItemMinecart> containingMinecarts = new ArrayList<>();
 
     public VirtualItemStack(ItemStack visualItemStack, ChestMinecartEntity minecart, int slot, int amount) {
@@ -73,6 +73,10 @@ public  class VirtualItemStack {
             "visualItemStack=" + visualItemStack.getItem() +
             ", amount=" + visualItemStack.getCount() +
             '}';
+    }
+
+    public int getAmount() {
+        return visualItemStack.getCount();
     }
 
     public static class ItemMinecart {

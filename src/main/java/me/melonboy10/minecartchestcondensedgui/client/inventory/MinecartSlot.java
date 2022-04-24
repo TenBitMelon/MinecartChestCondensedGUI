@@ -4,7 +4,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
-import java.util.List;
 import java.util.Optional;
 
 import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.visibleItems;
@@ -30,7 +29,9 @@ public class MinecartSlot extends Slot {
     }
 
     public ItemStack getStack() {
-        return visibleItems.size() > this.index ? visibleItems.get(this.index).visualItemStack : ItemStack.EMPTY;
+        ItemStack copy = (visibleItems.size() > this.index ? visibleItems.get(this.index).visualItemStack : ItemStack.EMPTY).copy();
+        copy.setCount(1);
+        return copy;
     }
 
     public int getMaxItemCount() {
@@ -50,15 +51,16 @@ public class MinecartSlot extends Slot {
         return !this.getStack().isEmpty();
     }
 
-    public ItemStack insertStack(ItemStack stack) {
-        System.out.println("insertt tak");
-//        if (!stack.isEmpty()) {
-//            MinecartManager.insertItemToMinecarts(stack);
-//        }
-        return stack;
+    public ItemStack insertStack(ItemStack stack, int count) {
+        System.out.println("insert");
+        return super.insertStack(stack, count);
     }
 
     public boolean isEnabled() {
+        return true;
+    }
+
+    public boolean canInsert(ItemStack stack) {
         return true;
     }
 

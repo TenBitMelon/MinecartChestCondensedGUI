@@ -8,7 +8,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.collection.DefaultedList;
 
-import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.*;
+import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.rowCount;
 
 public class CondensedItemScreenHandler extends ScreenHandler {
 
@@ -61,7 +61,8 @@ public class CondensedItemScreenHandler extends ScreenHandler {
 
     @Override
     public ItemStack transferSlot(PlayerEntity player, int index) {
-        return super.transferSlot(player, index);
+        return ItemStack.EMPTY;
+//        return super.transferSlot(player, index);
     }
 
     //    public void slotClick(MinecartSlot hoveredSlot, int button) {

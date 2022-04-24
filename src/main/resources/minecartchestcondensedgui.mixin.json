@@ -8,7 +8,8 @@
   "client": [
     "ClientOpenScreenMixin",
     "ClientCloseScreenMixin",
-    "ClientUpdateInventoryMixin"
+    "ClientUpdateInventoryMixin",
+    "ClientClickSlotMixin"
   ],
   "injectors": {
     "defaultRequire": 1
