@@ -1,19 +1,19 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
 
 import java.util.List;
+import java.util.Optional;
 
-public class MinecartSlot {
-    public int x, y;
+import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.visibleItems;
+
+public class MinecartSlot extends Slot {
     public int index;
-    public final List<VirtualItemStack> items;
 
-    public MinecartSlot(List<VirtualItemStack> items, int index, int x, int y) {
-        this.x = x;
-        this.y = y;
-        this.items = items;
+    public MinecartSlot(int index, int x, int y) {
+        super(null, 0, x, y);
         this.index = index;
     }
 
@@ -25,12 +25,25 @@ public class MinecartSlot {
         System.out.println("take " + amount);
     }
 
+    public Optional<ItemStack> tryTakeStackRange(int min, int max, PlayerEntity player) {
+        return Optional.empty();
+    }
+
     public ItemStack getStack() {
-        return items.size() > this.index ? items.get(this.index).visualItemStack : ItemStack.EMPTY;
+        return visibleItems.size() > this.index ? visibleItems.get(this.index).visualItemStack : ItemStack.EMPTY;
+    }
+
+    public int getMaxItemCount() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public void setStack(ItemStack stack) {
+        System.out.println("put into cart");
     }
 
     public VirtualItemStack getVirtualStack() {
-        return items.size() > this.index ? items.get(this.index) : null;
+        return visibleItems.size() > this.index ? visibleItems.get(this.index) : null;
     }
 
     public boolean hasStack() {
@@ -48,4 +61,6 @@ public class MinecartSlot {
     public boolean isEnabled() {
         return true;
     }
+
+    public void markDirty() {}
 }
