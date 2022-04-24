@@ -16,19 +16,19 @@ public  class VirtualItemStack {
     public VirtualItemStack(ItemStack visualItemStack, ChestMinecartEntity minecart, int slot, int amount) {
         this.visualItemStack = visualItemStack;
         this.visualItemStack.setCount(amount);
-        this.amount = amount;
+//        this.amount = amount;
         containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
     }
 
     public VirtualItemStack(ItemStack visualItemStack, int amount, List<ItemMinecart> containingMinecarts) {
         this.visualItemStack = visualItemStack;
         this.visualItemStack.setCount(amount);
-        this.amount = amount;
+//        this.amount = amount;
         this.containingMinecarts = containingMinecarts;
     }
 
     public VirtualItemStack copy() {
-        return new VirtualItemStack(visualItemStack, amount, containingMinecarts);
+        return new VirtualItemStack(visualItemStack, visualItemStack.getCount(), containingMinecarts);
     }
 
     public void setItems(ChestMinecartEntity minecart, int slot, int amount) {
@@ -40,7 +40,7 @@ public  class VirtualItemStack {
                 int previousAmount = itemMinecart.totalAmount;
                 itemMinecart.setItems(slot, amount);
                 this.visualItemStack.setCount(itemMinecart.totalAmount - previousAmount);
-                this.amount += itemMinecart.totalAmount - previousAmount;
+//                this.amount += itemMinecart.totalAmount - previousAmount;
                 if (itemMinecart.totalAmount == 0) {
                     containingMinecarts.remove(i);
                 } else {
@@ -51,7 +51,7 @@ public  class VirtualItemStack {
         if (newMinecart) {
             containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
             this.visualItemStack.setCount(this.visualItemStack.getCount() + amount);
-            this.amount += amount;
+//            this.amount += amount;
             containingMinecarts.sort(quantityComparator);
         }
     }
@@ -64,14 +64,14 @@ public  class VirtualItemStack {
     };
 
     public boolean isEmpty() {
-        return amount == 0 || visualItemStack.isEmpty();
+        return visualItemStack.getCount() == 0 || visualItemStack.isEmpty();
     }
 
     @Override
     public String toString() {
         return "VirtualItemStack{" +
             "visualItemStack=" + visualItemStack.getItem() +
-            ", amount=" + amount +
+            ", amount=" + visualItemStack.getCount() +
             '}';
     }
 

@@ -62,6 +62,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
 
                 if (!MinecartManager.running) {
                     MinecraftClient.getInstance().setScreen(gui);
+                    MinecraftClient.getInstance().player.currentScreenHandler = gui.getScreenHandler();
                     // If the key was presses search the area for minecarts and add them to the list
 
                     client.player.getWorld().getNonSpectatingEntities(ChestMinecartEntity.class, client.player.getBoundingBox().expand(3))

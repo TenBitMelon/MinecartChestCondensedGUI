@@ -11,6 +11,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.structure.SnowyVillageData;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -58,16 +59,14 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     public static int rowCount; // The amount of rows in the minecart section
 
     public static List<VirtualItemStack> items = new ArrayList<>(); // the total items contined in the combined minecarts
-    public static List<ItemStack> searchedItems = new ArrayList<>(); // the visible items
+    public static List<VirtualItemStack> visibleItems = new ArrayList<>(); // the visible items
 //    public static List<VirtualItemStack> searchedVisibleItems = new ArrayList<>();
     
     private float scrollPosition;
     private boolean scrolling = false;
-    public static int rowsScrolled;
     private TextFieldWidget searchBox;
 
-
-    int hoveredSlot;
+    private MinecartSlot hoveredSlot;
 
     /**
      * Static method for creating a new Screen
@@ -123,10 +122,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 if (sortFilter == SortFilter.ALPHABETICALLY) {
                     items.sort(nameComparator);
-                    search();
+                    visibleItems.sort(nameComparator);
                 } else {
                     items.sort(quantityComparator);
-                    search();
+                    visibleItems.sort(quantityComparator);
                 }
                 search();
             }, "Not sorting up", "Sorting Up", this));
@@ -137,10 +136,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 if (sortFilter == SortFilter.ALPHABETICALLY) {
                     items.sort(nameComparator);
-                    search();
+                    visibleItems.sort(nameComparator);
                 } else {
                     items.sort(quantityComparator);
-                    search();
+                    visibleItems.sort(quantityComparator);
                 }
                 search();
             }, "Filter", "Filtder", this));
@@ -151,9 +150,9 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         this.renderBackground(matrices); // draws rhe transparent black that covers the background
         this.drawGrid(matrices, delta, mouseX, mouseY);
         this.drawScrollBar(matrices, delta, mouseX, mouseY);
-        this.drawMinecartItems(matrices, delta, mouseX, mouseY);
+//        this.drawMinecartItems(matrices, delta, mouseX, mouseY);
         super.render(matrices, mouseX, mouseY, delta);
-        this.drawMinecartTooltips(matrices, mouseX, mouseY);
+        this.drawMouseoverTooltip(matrices, mouseX, mouseY);
     }
 
     protected void drawGrid(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -189,7 +188,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, TEXTURE
         );
-        if (rowCount >= Math.ceil(searchedItems.size()/9F)) {
+        if (rowCount >= Math.ceil(visibleItems.size()/9F)) {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 244, 0, 12, 15);
         } else {
             this.drawTexture(matrices, scrollBarX, scrollBarY, 232, 0, 12, 15);
@@ -197,19 +196,31 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        hoveredSlot = -1;
-        for (int i = 0; i < rowCount * 9; i++) {
-            int slotX = this.x + 8 + 18 * (i % 9);
-            int slotY = this.y + 20 + 18 * (i / 9);
-            if ((i + rowsScrolled*9) < searchedItems.size()) {
-                ItemStack inventoryItem = searchedItems.get(i + rowsScrolled*9);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        hoveredSlot = null;
+        for (MinecartSlot slot : handler.minecartSlots) {
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            this.drawMinecartSlot(matrices, slot);
+
+            if (this.isPointWithinBounds(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
+//                this.focusedSlot = slot;
+                hoveredSlot = slot;
+                System.out.println(getZOffset());
+                drawSlotHighlight(matrices, x + slot.x, y + slot.y, 1000);
+            }
+        }
+        /*for (int i = 0; i < rowCount * 9; i++) {
+            int slotX = x + 8 + 18 * (i % 9);
+            int slotY = y + 20 + 18 * (i / 9);
+            if ((i + rowsScrolled*9) < searchedVisibleItems.size()) {
+                ItemStack inventoryItem = searchedVisibleItems.get(i + rowsScrolled*9).visualItemStack;
                 itemRenderer.renderInGui(inventoryItem, slotX, slotY);
                 itemRenderer.renderGuiItemOverlay(this.textRenderer, inventoryItem, slotX, slotY, "");
-                String amountString = abbreviateAmount(searchedItems.get(i + rowsScrolled*9).getCount());
+                String amountString = abbreviateAmount(searchedVisibleItems.get(i + rowsScrolled*9).amount);
                 MatrixStack textMatrixStack = new MatrixStack();
                 textMatrixStack.scale(0.5F, 0.5F, 1);
                 textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
-                if (searchedItems.get(i + rowsScrolled*9).getCount() == 0) {
+                if (searchedVisibleItems.get(i + rowsScrolled*9).amount == 0) {
                     textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.RED.getColorValue());
                 } else {
                     textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.WHITE.getColorValue());
@@ -218,14 +229,38 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             if (mouseX >= slotX - 1 && mouseX <= slotX + 16 && mouseY >= slotY - 1 && mouseY <= slotY + 16) {
                 fillGradient(matrices, slotX, slotY, slotX + 16, slotY + 16, -2130706433, -2130706433, 200);
                 hoveredSlot = i;
+                hoveredInventory = HoveredInventory.MINECARTS;
             }
-        }
+        }*/
     }
 
+    private void drawMinecartSlot(MatrixStack matrices, MinecartSlot slot) {
+        VirtualItemStack itemStack = slot.getVirtualStack();
+        if (itemStack == null) return;
 
-    protected void drawMinecartTooltips(MatrixStack matrices, int mouseX, int mouseY) {
-        if (hoveredSlot > -1 && hoveredSlot+rowsScrolled*9 < searchedItems.size() && this.handler.getCursorStack().isEmpty()) {
-            renderTooltip(matrices, searchedItems.get(hoveredSlot + rowsScrolled * 9), mouseX, mouseY);
+        this.setZOffset(100);
+        this.itemRenderer.zOffset = 100.0F;
+
+        RenderSystem.enableDepthTest();
+        this.itemRenderer.renderInGuiWithOverrides(client.player, itemStack.visualItemStack, x + slot.x, y + slot.y, slot.x + slot.y * this.backgroundWidth);
+        this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack.visualItemStack, x + slot.x, y + slot.y, " ");
+
+        String amountString = abbreviateAmount(itemStack.amount);
+        MatrixStack textMatrixStack = new MatrixStack();
+        textMatrixStack.scale(0.5F, 0.5F, 1);
+        textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
+        textRenderer.drawWithShadow(textMatrixStack, amountString, (x + slot.x) * 2 + 31 - textRenderer.getWidth(amountString), (y + slot.y) * 2 + 23, itemStack.amount == 0 ? Formatting.RED.getColorValue() : Formatting.WHITE.getColorValue());
+
+        this.itemRenderer.zOffset = 0.0F;
+        this.setZOffset(0);
+    }
+
+    @Override
+    protected void drawMouseoverTooltip(MatrixStack matrices, int mouseX, int mouseY) {
+        if (this.handler.getCursorStack().isEmpty() && this.hoveredSlot != null && this.hoveredSlot.hasStack()) {
+            this.renderTooltip(matrices, hoveredSlot.getStack(), mouseX, mouseY);
+        } else {
+            super.drawMouseoverTooltip(matrices, mouseX, mouseY);
         }
     }
 
@@ -238,11 +273,10 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         if (isMouseOver(mouseX, mouseY, x + 174, y + 20, x + 186, y + 18 + rowCount * 18)) { // is mouse in scroll bar
             this.scrolling = shouldShowScrollbar();
             return true;
-        } else if (hoveredSlot != -1 && hoveredSlot+rowsScrolled*9 < searchedItems.size()) {
-            handler.checkForDoubleClick(hoveredSlot+rowsScrolled*9, button);
-            handler.slotClick(hoveredSlot+rowsScrolled*9, button);
+        } /*else if (hoveredSlot != null && hoveredSlot.hasStack()) {
+            handler.slotClick(hoveredSlot, button);
             return true;
-        }
+        }*/
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
@@ -535,6 +569,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_LEFT_SHIFT || keyCode == GLFW.GLFW_KEY_RIGHT_SHIFT) {
+            if (sortFilter == SortFilter.ALPHABETICALLY) {
+                visibleItems.sort(nameComparator);
+            } else {
+                visibleItems.sort(quantityComparator);
+            }
             search();
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
@@ -556,15 +595,13 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         }
     }
 
-    private void search() {
+    private void search() { // this is only displaying the first item no clue why
         String searchText = searchBox.getText();
         if (searchText.isEmpty()) {
-            searchedItems.clear();
-            for (int i = 0; i < items.size(); i++) {
-                searchedItems.add(items.get(i).visualItemStack);
-            }
+            visibleItems.clear();
+            visibleItems.addAll(items);
         } else {
-            ArrayList<ItemStack> searchedItems = new ArrayList<>();
+            ArrayList<VirtualItemStack> searchedItems = new ArrayList<>();
             if (searchText.startsWith("#")) {
                 searchText = searchText.substring(1);
 
@@ -572,7 +609,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     Collection<Identifier> itemTags = ItemTags.getTagGroup().getTagsFor(virtualItemStack.visualItemStack.getItem());
                     for (Identifier tag : itemTags) {
                         if (tag.getPath().contains(searchText)) {
-                            searchedItems.add(virtualItemStack.visualItemStack);
+                            searchedItems.add(virtualItemStack);
                             break;
                         }
                     }
@@ -582,12 +619,12 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     ItemStack visualItemStack = virtualItemStack.visualItemStack;
                     if (visualItemStack.getName().getString().contains(searchText) ||
                         Registry.ITEM.getId(visualItemStack.getItem()).toString().contains(searchText)) {
-                        searchedItems.add(virtualItemStack.visualItemStack);
+                        searchedItems.add(virtualItemStack);
                     }
                 }
             }
-            CondensedItemHandledScreen.searchedItems.clear();
-            CondensedItemHandledScreen.searchedItems.addAll(searchedItems);
+            visibleItems.clear();
+            visibleItems.addAll(searchedItems);
         }
 
         scrollItems(0);
@@ -595,12 +632,12 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
     public void scrollItems(float position) {
         scrollPosition = position;
-        rowsScrolled = Math.round(position * (float) (Math.ceil(searchedItems.size() / 9F) - rowCount));
-//        DefaultedList<MinecartSlot> minecartSlots = handler.minecartSlots;
-//        for (int i = 0; i < minecartSlots.size(); i++) {
-//            MinecartSlot minecartSlot = minecartSlots.get(i);
-//            minecartSlot.index = i + rowsScrolled * 9;
-//        }
+        int rowsScrolled = Math.round(position * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+        DefaultedList<MinecartSlot> minecartSlots = handler.minecartSlots;
+        for (int i = 0; i < minecartSlots.size(); i++) {
+            MinecartSlot minecartSlot = minecartSlots.get(i);
+            minecartSlot.index = i + rowsScrolled * 9;
+        }
     }
 
     public boolean shouldShowScrollbar() {
@@ -608,8 +645,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     private int getVirtualItemStackForItem(ItemStack itemstack) {
-        for (int i = 0; i < items.size(); i++) {
-            if (ItemStack.canCombine(items.get(i).visualItemStack, itemstack)) {
+        for (int i = 0; i < visibleItems.size(); i++) {
+            if (ItemStack.canCombine(visibleItems.get(i).visualItemStack, itemstack)) {
                 return i;
             }
         }
@@ -623,7 +660,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (virtualItemStack.visualItemStack.getCount() < 1) {
+                if (virtualItemStack.amount < 1) {
                     items.remove(i);
                 } else {
                     if (sortFilter == SortFilter.ALPHABETICALLY) {
@@ -631,7 +668,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     } else {
                         items.sort(quantityComparator);
                     }
-                    search();
+                    //search();
                 }
             }
         }
@@ -642,9 +679,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             } else {
                 items.sort(quantityComparator);
             }
-            search();
+            //XDsearch();
         }
-        search();
+        visibleItems.clear();
+        visibleItems.addAll(items);
+        //search();
     }
 
     public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
@@ -652,7 +691,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             VirtualItemStack currentVirtualItemStack = items.get(i);
             if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
                 currentVirtualItemStack.setItems(minecart, slot, newAmount);
-                if (currentVirtualItemStack.visualItemStack.getCount() < 1) {
+                if (currentVirtualItemStack.amount < 1) {
                     items.remove(i);
                 } else {
                     if (sortFilter == SortFilter.ALPHABETICALLY) {
@@ -660,15 +699,17 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     } else {
                         items.sort(quantityComparator);
                     }
-                    search();
+                    //search();
                 }
             }
         }
-        search();
+        visibleItems.clear();
+        visibleItems.addAll(items);
+        //search();
     }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
-        int difference = virtualItemStack2.visualItemStack.getCount() - virtualItemStack1.visualItemStack.getCount();
+        int difference = virtualItemStack2.amount - virtualItemStack1.amount;
         if (difference > 0) {
             return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
         } else if (difference < 0) {
@@ -701,7 +742,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         } else if (difference < 0) {
             return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
         } else {
-            difference = virtualItemStack2.visualItemStack.getCount() - virtualItemStack1.visualItemStack.getCount();
+            difference = virtualItemStack2.amount - virtualItemStack1.amount;
             if (difference > 0) {
                 return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
             } else if (difference < 0) {
