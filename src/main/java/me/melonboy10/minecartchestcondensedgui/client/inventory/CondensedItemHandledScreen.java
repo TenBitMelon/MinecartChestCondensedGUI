@@ -10,8 +10,8 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.structure.SnowyVillageData;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
@@ -245,11 +245,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         this.itemRenderer.renderInGuiWithOverrides(client.player, itemStack.visualItemStack, x + slot.x, y + slot.y, slot.x + slot.y * this.backgroundWidth);
         this.itemRenderer.renderGuiItemOverlay(this.textRenderer, itemStack.visualItemStack, x + slot.x, y + slot.y, " ");
 
-        String amountString = abbreviateAmount(itemStack.amount);
+        String amountString = abbreviateAmount(itemStack.getAmount());
         MatrixStack textMatrixStack = new MatrixStack();
         textMatrixStack.scale(0.5F, 0.5F, 1);
         textMatrixStack.translate(0, 0, itemRenderer.zOffset + 200.0F);
-        textRenderer.drawWithShadow(textMatrixStack, amountString, (x + slot.x) * 2 + 31 - textRenderer.getWidth(amountString), (y + slot.y) * 2 + 23, itemStack.amount == 0 ? Formatting.RED.getColorValue() : Formatting.WHITE.getColorValue());
+        textRenderer.drawWithShadow(textMatrixStack, amountString, (x + slot.x) * 2 + 31 - textRenderer.getWidth(amountString), (y + slot.y) * 2 + 23, itemStack.getAmount() == 0 ? Formatting.RED.getColorValue() : Formatting.WHITE.getColorValue());
 
         this.itemRenderer.zOffset = 0.0F;
         this.setZOffset(0);
@@ -660,7 +660,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
                 virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (virtualItemStack.amount < 1) {
+                if (virtualItemStack.getAmount() < 1) {
                     items.remove(i);
                 } else {
                     if (sortFilter == SortFilter.ALPHABETICALLY) {
@@ -691,7 +691,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             VirtualItemStack currentVirtualItemStack = items.get(i);
             if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
                 currentVirtualItemStack.setItems(minecart, slot, newAmount);
-                if (currentVirtualItemStack.amount < 1) {
+                if (currentVirtualItemStack.getAmount() < 1) {
                     items.remove(i);
                 } else {
                     if (sortFilter == SortFilter.ALPHABETICALLY) {
@@ -709,7 +709,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
-        int difference = virtualItemStack2.amount - virtualItemStack1.amount;
+        int difference = virtualItemStack2.getAmount() - virtualItemStack1.getAmount();
         if (difference > 0) {
             return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
         } else if (difference < 0) {
@@ -742,7 +742,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         } else if (difference < 0) {
             return sortDirection.equals(SortDirection.DESCENDING) ? -1 : 1;
         } else {
-            difference = virtualItemStack2.amount - virtualItemStack1.amount;
+            difference = virtualItemStack2.getAmount() - virtualItemStack1.getAmount();
             if (difference > 0) {
                 return sortDirection.equals(SortDirection.DESCENDING) ? 1 : -1;
             } else if (difference < 0) {
