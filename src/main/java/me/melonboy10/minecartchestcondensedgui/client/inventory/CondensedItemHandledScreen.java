@@ -67,6 +67,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     
     private float scrollPosition;
     private boolean scrolling = false;
+    int rowsScrolled = 0;
     private TextFieldWidget searchBox;
     private ArrayList<SideButtonWidget> buttons = new ArrayList<>();
 
@@ -158,7 +159,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         this.renderBackground(matrices); // draws rhe transparent black that covers the background
         this.drawGrid(matrices, delta, mouseX, mouseY);
         this.drawScrollBar(matrices, delta, mouseX, mouseY);
-//        this.drawMinecartItems(matrices, delta, mouseX, mouseY);
+        this.drawMinecartItemNumbers(matrices, delta, mouseX, mouseY);
         super.render(matrices, mouseX, mouseY, delta);
         this.drawMouseoverTooltip(matrices, mouseX, mouseY);
     }
@@ -249,6 +250,25 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 hoveredInventory = HoveredInventory.MINECARTS;
             }
         }*/
+    }
+
+
+    private void drawMinecartItemNumbers(MatrixStack matrices, float delta, int mouseX, int mouseY) {
+        for (int i = 0; i < rowCount * 9; i++) {
+            int slotX = this.x + 8 + 18 * (i % 9);
+            int slotY = this.y + 20 + 18 * (i / 9);
+            if ((i + rowsScrolled*9) < visibleItems.size()) {
+                String amountString = abbreviateAmount(visibleItems.get(i + rowsScrolled*9).getAmount());
+                MatrixStack textMatrixStack = new MatrixStack();
+                textMatrixStack.scale(0.5F, 0.5F, 1);
+                textMatrixStack.translate(0, 0, 300.0F);
+                if (visibleItems.get(i + rowsScrolled*9).getAmount() == 0) {
+                    textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.RED.getColorValue());
+                } else {
+                    textRenderer.drawWithShadow(textMatrixStack, amountString, slotX * 2 + 31 - textRenderer.getWidth(amountString), slotY * 2 + 23, Formatting.WHITE.getColorValue());
+                }
+            }
+        }
     }
 
     private void drawMinecartSlot(MatrixStack matrices, MinecartSlot slot) {
@@ -640,7 +660,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
     public void scrollItems(float position) {
         scrollPosition = position;
-        int rowsScrolled = Math.round(position * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
+        rowsScrolled = Math.round(position * (float) (Math.ceil(visibleItems.size() / 9F) - rowCount));
         DefaultedList<MinecartSlot> minecartSlots = handler.minecartSlots;
         for (int i = 0; i < minecartSlots.size(); i++) {
             MinecartSlot minecartSlot = minecartSlots.get(i);
