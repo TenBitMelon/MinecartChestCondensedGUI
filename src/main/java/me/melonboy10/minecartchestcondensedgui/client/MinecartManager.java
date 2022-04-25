@@ -42,7 +42,8 @@ public class MinecartManager {
         taskQueue.add(task);
     }
 
-    public abstract static class MinecartTask { // Task responsible for 1. open cart 2. run the run function on task 3. close minecart
+    public abstract static class MinecartTask {
+        // Task responsible for 1. open cart 2. run the run function on task 3. close minecart
 
         ChestMinecartEntity minecartEntity;
         public int syncID;
@@ -58,27 +59,12 @@ public class MinecartManager {
             }
         }
 
-        public void processInventoryUpdate(List<ItemStack> contents) {
+        public void receiveMinecartContents(List<ItemStack> contents) {
             if (running && currentTask.equals(this)) {
                 for (int i = 0; i < contents.size() && i < 27; i++) {
                     ItemStack itemStack = contents.get(i);
                     if (itemStack != null && !itemStack.equals(ItemStack.EMPTY)) {
                         gui.setItems(minecartEntity, itemStack, i);
-                    }
-                }
-                for (int i = 27; i < contents.size() && i < 63; i++) {
-                    ItemStack itemStack = contents.get(i);
-                    if (taskQueue.size() == 1) {
-
-                        if (itemStack.getItem() != Items.AIR) {
-//                            gui.visiblePlayerItems.set(i - 27, itemStack);
-                            System.out.println(itemStack);
-                        }
-                        if (i >= 27 && i < 54) {
-                            client.player.getInventory().setStack(i - 18, itemStack);
-                        } else if (i >= 54 && i < 63) {
-                            client.player.getInventory().setStack(i - 54, itemStack);
-                        }
                     }
                 }
                 run();
@@ -131,8 +117,6 @@ public class MinecartManager {
             super.run();
         }
     }
-
-
 
     public static void insertItemToMinecarts(ItemStack newItem) {
     }

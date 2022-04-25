@@ -16,7 +16,7 @@ public class ClientUpdateInventoryMixin {
     private void interceptPacket(InventoryS2CPacket packet, CallbackInfo ci) {
         if (MinecartManager.running) {
             if (MinecartManager.currentTask.syncID == packet.getSyncId()) {
-                MinecartManager.currentTask.processInventoryUpdate(packet.getContents());
+                MinecartManager.currentTask.receiveMinecartContents(packet.getContents());
             }
         }
     }

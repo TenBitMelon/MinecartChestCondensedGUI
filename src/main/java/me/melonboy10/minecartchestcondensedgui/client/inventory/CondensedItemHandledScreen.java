@@ -1,8 +1,10 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.sun.jna.Structure;
 import lombok.Getter;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.GameRenderer;
@@ -10,6 +12,7 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.ItemTags;
@@ -65,6 +68,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     private float scrollPosition;
     private boolean scrolling = false;
     private TextFieldWidget searchBox;
+    private ArrayList<SideButtonWidget> buttons = new ArrayList<>();
 
     private MinecartSlot hoveredSlot;
 
@@ -75,7 +79,11 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
      * @return new CondensedItemHandledScreen
      */
     public static CondensedItemHandledScreen create() {
-        if (minecartScreen != null) return minecartScreen;
+        if (minecartScreen != null) {
+            items.clear();
+            visibleItems.clear();
+            return minecartScreen;
+        }
         final CondensedItemScreenHandler handler = new CondensedItemScreenHandler();
         return new CondensedItemHandledScreen(handler);
     }
@@ -110,12 +118,12 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         addSelectableChild(searchBox);
 
         int i = 8;
-        addDrawableChild(new SideButtonWidget(x - 18, y + 8, 0,
+        buttons.add(addDrawableChild(new SideButtonWidget(x - 18, y + 8, 0,
             button -> {
 //                sortMinecarts();
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-            }, "Sort Nearby Minecarts", this));
-        addDrawableChild(new SideButtonWidget(x - 18, y + (i += 18), 1, 2,
+            }, "Sort Nearby Minecarts", this)));
+        buttons.add(addDrawableChild(new SideButtonWidget(x - 18, y + (i += 18), 1, 2,
             button -> {
                 sortDirection = sortDirection.other();
                 ((SideButtonWidget) button).setToggled(sortDirection.equals(SortDirection.ASCENDING));
@@ -128,8 +136,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     visibleItems.sort(quantityComparator);
                 }
                 search();
-            }, "Not sorting up", "Sorting Up", this));
-        addDrawableChild(new SideButtonWidget(x - 18, y + (i += 18), 3, 4,
+            }, "Not sorting up", "Sorting Up", this)));
+        buttons.add(addDrawableChild(new SideButtonWidget(x - 18, y + (i += 18), 3, 4,
             button -> {
                 sortFilter = sortFilter.other();
                 ((SideButtonWidget) button).setToggled(sortFilter.equals(SortFilter.ALPHABETICALLY));
@@ -142,7 +150,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                     visibleItems.sort(quantityComparator);
                 }
                 search();
-            }, "Filter", "Filtder", this));
+            }, "Filter", "Filtder", this)));
     }
 
     @Override
@@ -180,6 +188,15 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     protected void drawForeground(MatrixStack matrices, int mouseX, int mouseY) {
         this.textRenderer.draw(matrices, new TranslatableText("minecartchestcondensedgui.defaultMinecartLabel"), 8, 6, 4210752);
         this.textRenderer.draw(matrices, new TranslatableText("container.inventory"), 8, rowCount * 18 + 24, 4210752);
+    }
+
+    protected void drawMouseoverTooltip(MatrixStack matrices, int x, int y) {
+        super.drawMouseoverTooltip(matrices, x, y);
+        for (SideButtonWidget button : buttons) {
+            if (button.isHovered()) {
+                renderTooltip(matrices, new LiteralText(button.toggled && button.toggledTooltip != null ? button.toggledTooltip : button.tooltip), x, y);
+            }
+        }
     }
 
     private void drawScrollBar(MatrixStack matrices, float delta, int mouseX, int mouseY) {
@@ -253,15 +270,6 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
 
         this.itemRenderer.zOffset = 0.0F;
         this.setZOffset(0);
-    }
-
-    @Override
-    protected void drawMouseoverTooltip(MatrixStack matrices, int mouseX, int mouseY) {
-        if (this.handler.getCursorStack().isEmpty() && this.hoveredSlot != null && this.hoveredSlot.hasStack()) {
-            this.renderTooltip(matrices, hoveredSlot.getStack(), mouseX, mouseY);
-        } else {
-            super.drawMouseoverTooltip(matrices, mouseX, mouseY);
-        }
     }
 
     private boolean isMouseOver(double mouseX, double mouseY, int x1, int y1, int x2, int y2) {
@@ -654,58 +662,58 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
-        boolean newItem = true;
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack virtualItemStack = items.get(i);
-            if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
-                newItem = false;
-                virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (virtualItemStack.getAmount() < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    //search();
-                }
-            }
-        }
-        if (newItem) {
-            items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
-            if (sortFilter == SortFilter.ALPHABETICALLY) {
-                items.sort(nameComparator);
-            } else {
-                items.sort(quantityComparator);
-            }
-            //XDsearch();
-        }
-        visibleItems.clear();
-        visibleItems.addAll(items);
-        //search();
+//        boolean newItem = true;
+//        for (int i = 0; i < items.size(); i++) {
+//            VirtualItemStack virtualItemStack = items.get(i);
+//            if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
+//                newItem = false;
+//                virtualItemStack.setItems(minecart, slot, itemstack.getCount());
+//                if (virtualItemStack.getAmount() < 1) {
+//                    items.remove(i);
+//                } else {
+//                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                        items.sort(nameComparator);
+//                    } else {
+//                        items.sort(quantityComparator);
+//                    }
+//                    //search();
+//                }
+//            }
+//        }
+//        if (newItem) {
+//            items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
+//            if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                items.sort(nameComparator);
+//            } else {
+//                items.sort(quantityComparator);
+//            }
+//            //XDsearch();
+//        }
+//        visibleItems.clear();
+//        visibleItems.addAll(items);
+//        //search();
     }
 
     public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack currentVirtualItemStack = items.get(i);
-            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
-                currentVirtualItemStack.setItems(minecart, slot, newAmount);
-                if (currentVirtualItemStack.getAmount() < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    //search();
-                }
-            }
-        }
-        visibleItems.clear();
-        visibleItems.addAll(items);
-        //search();
+//        for (int i = 0; i < items.size(); i++) {
+//            VirtualItemStack currentVirtualItemStack = items.get(i);
+//            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
+//                currentVirtualItemStack.setItems(minecart, slot, newAmount);
+//                if (currentVirtualItemStack.getAmount() < 1) {
+//                    items.remove(i);
+//                } else {
+//                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                        items.sort(nameComparator);
+//                    } else {
+//                        items.sort(quantityComparator);
+//                    }
+//                    //search();
+//                }
+//            }
+//        }
+//        visibleItems.clear();
+//        visibleItems.addAll(items);
+//        //search();
     }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
