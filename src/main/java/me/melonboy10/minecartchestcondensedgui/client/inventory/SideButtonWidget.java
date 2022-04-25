@@ -15,10 +15,10 @@ public class SideButtonWidget extends ButtonWidget {
     private final Identifier texture = new Identifier("minecartchestcondensedgui", "textures/gui/container/grid.png");;
     private final int index;
     private final int toggleIndex;
-    private final String tooltip;
-    private final String toggledTooltip;
+    final String tooltip;
+    final String toggledTooltip;
     private final Screen screen;
-    private boolean toggled;
+    boolean toggled;
 
     /**
      * Creates a new button with a texture from the grid texture buttons
@@ -79,8 +79,5 @@ public class SideButtonWidget extends ButtonWidget {
 
         RenderSystem.enableDepthTest();
         drawTexture(matrices, x, y, tx, ty, 16, 16);
-        if (hovered) {
-            screen.renderTooltip(matrices, new LiteralText(toggled && toggledTooltip != null ? toggledTooltip : tooltip), mouseX, mouseY);
-        }
     }
 }

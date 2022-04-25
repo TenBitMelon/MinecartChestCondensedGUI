@@ -58,7 +58,7 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (keyBinding.wasPressed()) {
                 client.player.sendMessage(new LiteralText("Key Y was pressed!"), false);
-                if (gui == null) gui = CondensedItemHandledScreen.create();
+                gui = CondensedItemHandledScreen.create();
 
                 if (!MinecartManager.running) {
                     MinecraftClient.getInstance().setScreen(gui);
