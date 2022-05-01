@@ -1,5 +1,6 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
+import lombok.Getter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -11,12 +12,17 @@ import net.minecraft.util.collection.DefaultedList;
 import static me.melonboy10.minecartchestcondensedgui.client.inventory.CondensedItemHandledScreen.rowCount;
 
 public class CondensedItemScreenHandler extends ScreenHandler {
-
+    @Getter private static CondensedItemScreenHandler handler;
     private final ScreenHandler playerScreenHandler = MinecraftClient.getInstance().player.playerScreenHandler;
     public DefaultedList<MinecartSlot> minecartSlots = DefaultedList.of(); // List of the slots for the visual items
 
-    protected CondensedItemScreenHandler() {
+    public static CondensedItemScreenHandler create() {
+        return handler == null ? new CondensedItemScreenHandler() : handler;
+    }
+
+    private CondensedItemScreenHandler() {
         super(null, 0);
+        handler = this;
     }
 
     public void init() {
