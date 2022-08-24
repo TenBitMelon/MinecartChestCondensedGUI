@@ -1169,60 +1169,60 @@ public class CondensedItemScreen extends Screen {
         return -1;
     }
 
-    public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
-        boolean newItem = true;
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack virtualItemStack = items.get(i);
-            if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
-                newItem = false;
-                virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (virtualItemStack.amount < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    search();
-                }
-            }
-        }
-        if (newItem) {
-            items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
-            if (sortFilter == SortFilter.ALPHABETICALLY) {
-                items.sort(nameComparator);
-            } else {
-                items.sort(quantityComparator);
-            }
-            search();
-        }
-        visibleItems.clear();
-        visibleItems.addAll(items);
-        search();
-    }
+//    public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
+//        boolean newItem = true;
+//        for (int i = 0; i < items.size(); i++) {
+//            VirtualItemStack virtualItemStack = items.get(i);
+//            if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
+//                newItem = false;
+//                virtualItemStack.addItem(minecart, slot, itemstack.getCount());
+//                if (virtualItemStack.amount < 1) {
+//                    items.remove(i);
+//                } else {
+//                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                        items.sort(nameComparator);
+//                    } else {
+//                        items.sort(quantityComparator);
+//                    }
+//                    search();
+//                }
+//            }
+//        }
+//        if (newItem) {
+//            items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
+//            if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                items.sort(nameComparator);
+//            } else {
+//                items.sort(quantityComparator);
+//            }
+//            search();
+//        }
+//        visibleItems.clear();
+//        visibleItems.addAll(items);
+//        search();
+//    }
 
-    public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack currentVirtualItemStack = items.get(i);
-            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
-                currentVirtualItemStack.setItems(minecart, slot, newAmount);
-                if (currentVirtualItemStack.amount < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    search();
-                }
-            }
-        }
-        visibleItems.clear();
-        visibleItems.addAll(items);
-        search();
-    }
+//    public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
+//        for (int i = 0; i < items.size(); i++) {
+//            VirtualItemStack currentVirtualItemStack = items.get(i);
+//            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
+//                currentVirtualItemStack.addItem(minecart, slot, newAmount);
+//                if (currentVirtualItemStack.amount < 1) {
+//                    items.remove(i);
+//                } else {
+//                    if (sortFilter == SortFilter.ALPHABETICALLY) {
+//                        items.sort(nameComparator);
+//                    } else {
+//                        items.sort(quantityComparator);
+//                    }
+//                    search();
+//                }
+//            }
+//        }
+//        visibleItems.clear();
+//        visibleItems.addAll(items);
+//        search();
+//    }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
         int difference = virtualItemStack2.amount - virtualItemStack1.amount;

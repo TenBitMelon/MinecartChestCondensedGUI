@@ -31,27 +31,20 @@ public  class VirtualItemStack {
         return new VirtualItemStack(visualItemStack, visualItemStack.getCount(), containingMinecarts);
     }
 
-    public void setItems(ChestMinecartEntity minecart, int slot, int amount) {
+    public void addItem(ChestMinecartEntity minecart, int slot, ItemStack item) {
         boolean newMinecart = true;
-        for (int i = 0; i < containingMinecarts.size(); i++) {
-            ItemMinecart itemMinecart = containingMinecarts.get(i);
+        for (ItemMinecart itemMinecart : containingMinecarts) {
             if (itemMinecart.minecart == minecart) {
                 newMinecart = false;
-                int previousAmount = itemMinecart.totalAmount;
-                itemMinecart.setItems(slot, amount);
-                this.visualItemStack.setCount(itemMinecart.totalAmount - previousAmount);
-//                this.amount += itemMinecart.totalAmount - previousAmount;
-                if (itemMinecart.totalAmount == 0) {
-                    containingMinecarts.remove(i);
-                } else {
-                    containingMinecarts.sort(quantityComparator);
-                }
+
+                itemMinecart.addItem(slot, item);
+                containingMinecarts.sort(quantityComparator);
             }
         }
         if (newMinecart) {
-            containingMinecarts.add(new ItemMinecart(minecart, slot, amount));
-            this.visualItemStack.setCount(this.visualItemStack.getCount() + amount);
-//            this.amount += amount;
+            containingMinecarts.add(new ItemMinecart(minecart, slot, item.getCount()));
+            this.visualItemStack.setCount(this.visualItemStack.getCount() + item.getCount());
+//            this.amount += item.getCount();
             containingMinecarts.sort(quantityComparator);
         }
     }
@@ -92,15 +85,16 @@ public  class VirtualItemStack {
             itemSlotAmounts.add(amount);
             totalAmount = amount;
         }
-        public void setItems(int slot, int amount) {
+
+        public void addItem(int slot, ItemStack item) {
             int slotLocation = itemContainingSlots.indexOf(slot);
             if (slotLocation != -1) {
-                totalAmount += amount - itemSlotAmounts.get(slotLocation);
-                itemSlotAmounts.set(slotLocation, amount);
+                totalAmount += item.getCount() - itemSlotAmounts.get(slotLocation);
+                itemSlotAmounts.set(slotLocation, item.getCount());
             } else {
                 itemContainingSlots.add(slot);
-                itemSlotAmounts.add(amount);
-                totalAmount += amount;
+                itemSlotAmounts.add(item.getCount());
+                totalAmount += item.getCount();
             }
         }
     }
