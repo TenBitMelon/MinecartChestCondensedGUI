@@ -712,14 +712,17 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     public void addItem(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
+        client.player.sendMessage(new LiteralText("Adding Item to gui " + itemstack.toString()), false);
         boolean newItem = true;
         for (VirtualItemStack virtualItemStack : items) {
             if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
+                client.player.sendMessage(new LiteralText("└ Not new item " + itemstack.toString()), false);
                 virtualItemStack.addItem(minecart, slot, itemstack);
             }
         }
         if (newItem) {
+            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ New Item type " + itemstack.toString()), false);
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
         }
 

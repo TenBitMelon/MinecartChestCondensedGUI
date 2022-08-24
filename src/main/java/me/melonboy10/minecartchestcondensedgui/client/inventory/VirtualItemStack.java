@@ -1,7 +1,9 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.LiteralText;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,12 +38,14 @@ public  class VirtualItemStack {
         for (ItemMinecart itemMinecart : containingMinecarts) {
             if (itemMinecart.minecart == minecart) {
                 newMinecart = false;
+                MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ Not new minecart " + minecart.getId()), false);
 
                 itemMinecart.addItem(slot, item);
-                containingMinecarts.sort(quantityComparator);
             }
         }
+        containingMinecarts.sort(quantityComparator);
         if (newMinecart) {
+            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ New minecart " + minecart.getId()), false);
             containingMinecarts.add(new ItemMinecart(minecart, slot, item.getCount()));
             this.visualItemStack.setCount(this.visualItemStack.getCount() + item.getCount());
 //            this.amount += item.getCount();
@@ -87,6 +91,7 @@ public  class VirtualItemStack {
         }
 
         public void addItem(int slot, ItemStack item) {
+            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ Add item to IteMMinecart"), false);
             int slotLocation = itemContainingSlots.indexOf(slot);
             if (slotLocation != -1) {
                 totalAmount += item.getCount() - itemSlotAmounts.get(slotLocation);
