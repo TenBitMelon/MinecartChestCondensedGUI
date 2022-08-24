@@ -1,10 +1,8 @@
 package me.melonboy10.minecartchestcondensedgui.client.inventory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.sun.jna.Structure;
 import lombok.Getter;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.GameRenderer;
@@ -12,8 +10,6 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.vehicle.ChestMinecartEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
-import net.minecraft.screen.slot.Slot;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.text.LiteralText;
@@ -715,59 +711,26 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         return -1;
     }
 
-    public void setItems(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
+    public void addItem(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
         boolean newItem = true;
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack virtualItemStack = items.get(i);
+        for (VirtualItemStack virtualItemStack : items) {
             if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
-                virtualItemStack.setItems(minecart, slot, itemstack.getCount());
-                if (virtualItemStack.getAmount() < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    //search();
-                }
+                virtualItemStack.addItem(minecart, slot, itemstack);
             }
         }
         if (newItem) {
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
-            if (sortFilter == SortFilter.ALPHABETICALLY) {
-                items.sort(nameComparator);
-            } else {
-                items.sort(quantityComparator);
-            }
-            //XDsearch();
         }
-        visibleItems.clear();
-        visibleItems.addAll(items);
-        //search();
-    }
 
-    public void setItems(ChestMinecartEntity minecart, VirtualItemStack virtualItemStack, int newAmount, int slot) {
-        for (int i = 0; i < items.size(); i++) {
-            VirtualItemStack currentVirtualItemStack = items.get(i);
-            if (ItemStack.canCombine(currentVirtualItemStack.visualItemStack, virtualItemStack.visualItemStack)) {
-                currentVirtualItemStack.setItems(minecart, slot, newAmount);
-                if (currentVirtualItemStack.getAmount() < 1) {
-                    items.remove(i);
-                } else {
-                    if (sortFilter == SortFilter.ALPHABETICALLY) {
-                        items.sort(nameComparator);
-                    } else {
-                        items.sort(quantityComparator);
-                    }
-                    //search();
-                }
-            }
+        if (sortFilter == SortFilter.ALPHABETICALLY) {
+            items.sort(nameComparator);
+        } else {
+            items.sort(quantityComparator);
         }
+
         visibleItems.clear();
         visibleItems.addAll(items);
-        //search();
     }
 
     private final Comparator<VirtualItemStack> quantityComparator = (virtualItemStack1, virtualItemStack2) -> {
