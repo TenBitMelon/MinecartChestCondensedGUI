@@ -60,14 +60,18 @@ public class MinecartChestCondensedGUIClient implements ClientModInitializer {
                 client.player.sendMessage(new LiteralText("Key Y was pressed!"), false);
                 gui = CondensedItemHandledScreen.create();
 
+                client.player.sendMessage(new LiteralText("Runniung? " + MinecartManager.running), false);
                 if (!MinecartManager.running) {
                     MinecraftClient.getInstance().setScreen(gui);
                     MinecraftClient.getInstance().player.currentScreenHandler = gui.getScreenHandler();
+                    client.player.sendMessage(new LiteralText("Opened menu"), false);
                     // If the key was presses search the area for minecarts and add them to the list
 
+                    client.player.sendMessage(new LiteralText("Finding Carts"), false);
                     client.player.getWorld().getNonSpectatingEntities(ChestMinecartEntity.class, client.player.getBoundingBox().expand(3))
                     .stream().filter(chestMinecartEntity -> chestMinecartEntity.getDisplayName().getString().equals(displayName)).forEach(minecart -> {
                         MinecartManager.addTask(new MinecartManager.ScanTask(minecart));
+                            client.player.sendMessage(new LiteralText("└ Added minecart task"), false);
                     });
 
                     MinecartManager.runTask();
