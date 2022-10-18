@@ -6,10 +6,10 @@
   "mixins": [
   ],
   "client": [
-    "ClientOpenScreenMixin",
+    "ClientClickSlotMixin",
     "ClientCloseScreenMixin",
-    "ClientUpdateInventoryMixin",
-    "ClientClickSlotMixin"
+    "ClientOpenScreenMixin",
+    "ClientUpdateInventoryMixin"
   ],
   "injectors": {
     "defaultRequire": 1

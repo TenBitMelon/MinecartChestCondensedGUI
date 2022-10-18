@@ -38,14 +38,12 @@ public  class VirtualItemStack {
         for (ItemMinecart itemMinecart : containingMinecarts) {
             if (itemMinecart.minecart == minecart) {
                 newMinecart = false;
-                MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ Not new minecart " + minecart.getId()), false);
 
                 itemMinecart.addItem(slot, item);
             }
         }
         containingMinecarts.sort(quantityComparator);
         if (newMinecart) {
-            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ New minecart " + minecart.getId()), false);
             containingMinecarts.add(new ItemMinecart(minecart, slot, item.getCount()));
             this.visualItemStack.setCount(this.visualItemStack.getCount() + item.getCount());
 //            this.amount += item.getCount();
@@ -91,7 +89,6 @@ public  class VirtualItemStack {
         }
 
         public void addItem(int slot, ItemStack item) {
-            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ Add item to IteMMinecart"), false);
             int slotLocation = itemContainingSlots.indexOf(slot);
             if (slotLocation != -1) {
                 totalAmount += item.getCount() - itemSlotAmounts.get(slotLocation);
