@@ -27,9 +27,7 @@ public class MinecartManager {
     public static long startTime = 0;
 
     public static void runTask() {
-        client.player.sendMessage(new LiteralText("Start task"), false);
         if (!taskQueue.isEmpty()) {
-            client.player.sendMessage(new LiteralText("Queue not empty"), false);
             if (!running) {
                 running = true;
 //                startTime = System.currentTimeMillis();
@@ -37,7 +35,6 @@ public class MinecartManager {
             currentTask = taskQueue.get(0);
             taskQueue.get(0).openCart();
         } else {
-            client.player.sendMessage(new LiteralText("Queue empty! DONE"), false);
             running = false;
             if (currentTask != null) client.player.networkHandler.sendPacket(new CloseHandledScreenC2SPacket(currentTask.syncID));
         }
@@ -62,11 +59,9 @@ public class MinecartManager {
                 assert MinecraftClient.getInstance().interactionManager != null;
                 MinecraftClient.getInstance().interactionManager.interactEntity(client.player, minecartEntity, Hand.MAIN_HAND);
             }
-            client.player.sendMessage(new LiteralText("└ Cart opened"), false);
         }
 
         public void receiveMinecartContents(List<ItemStack> contents) {
-            client.player.sendMessage(new LiteralText("└ Packet contents recieved"), false);
             if (running && currentTask.equals(this)) {
                 for (int i = 0; i < contents.size() && i < 27; i++) {
                     ItemStack itemStack = contents.get(i);

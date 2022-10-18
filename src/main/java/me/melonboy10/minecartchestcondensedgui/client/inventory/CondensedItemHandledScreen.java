@@ -117,7 +117,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
             button -> {
 //                sortMinecarts();
                 client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-            }, "Sort Nearby Minecarts", this)));
+            }, /*"Sort Nearby Minecarts"*/"Refresh Nearby Minecarts", this)));
         buttons.add(addDrawableChild(new SideButtonWidget(x - 18, y + (i += 18), 1, 2,
             button -> {
                 sortDirection = sortDirection.other();
@@ -227,7 +227,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         }
     }
 
-    @Deprecated
+    /*@Deprecated
     private void drawMinecartItems(MatrixStack matrices, float delta, int mouseX, int mouseY) {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         hoveredSlot = null;
@@ -242,7 +242,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 drawSlotHighlight(matrices, x + slot.x, y + slot.y, 1000);
             }
         }
-        /*for (int i = 0; i < rowCount * 9; i++) {
+        for (int i = 0; i < rowCount * 9; i++) {
             int slotX = x + 8 + 18 * (i % 9);
             int slotY = y + 20 + 18 * (i / 9);
             if ((i + rowsScrolled*9) < searchedVisibleItems.size()) {
@@ -264,8 +264,8 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
                 hoveredSlot = i;
                 hoveredInventory = HoveredInventory.MINECARTS;
             }
-        }*/
-    }
+        }
+    }*/
 
     /**
      * Draws the numbers for the minecart items.
@@ -697,7 +697,7 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
         }
     }
 
-    // ! THIS IS INCORRECT !
+    // ! THIS IS INCORRECT ! i think
     public boolean shouldShowScrollbar() {
         return items.size() > 45;
     }
@@ -712,17 +712,14 @@ public class CondensedItemHandledScreen extends HandledScreen<CondensedItemScree
     }
 
     public void addItem(ChestMinecartEntity minecart, ItemStack itemstack, int slot) {
-        client.player.sendMessage(new LiteralText("Adding Item to gui " + itemstack.toString()), false);
         boolean newItem = true;
         for (VirtualItemStack virtualItemStack : items) {
             if (ItemStack.canCombine(virtualItemStack.visualItemStack, itemstack)) {
                 newItem = false;
-                client.player.sendMessage(new LiteralText("└ Not new item " + itemstack.toString()), false);
                 virtualItemStack.addItem(minecart, slot, itemstack);
             }
         }
         if (newItem) {
-            MinecraftClient.getInstance().player.sendMessage(new LiteralText("└ New Item type " + itemstack.toString()), false);
             items.add(new VirtualItemStack(itemstack, minecart, slot, itemstack.getCount()));
         }
 
